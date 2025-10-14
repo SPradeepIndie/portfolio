@@ -137,4 +137,4 @@ npm --version
 
 ## 📄 License
 
-MIT License - feel free to use this project as a starting point for your own portfolio!
+Apache License Version 2.0, January 2004
