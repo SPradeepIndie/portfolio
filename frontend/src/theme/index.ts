@@ -4,7 +4,7 @@
  * All rights reserved.
  */
 
-// Create complete themes by mixing foundation + colors
+// Create themes: foundation + colors
 // barrel file for themes
 
 import { createTheme } from '@mui/material/styles'

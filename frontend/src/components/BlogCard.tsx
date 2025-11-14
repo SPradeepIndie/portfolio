@@ -1,7 +1,9 @@
-/**
- * Copyright (C) 2024 Your Name
+/*
+ *  Copyright © 2025 My personal.
+ *
  * All rights reserved.
  */
+
 
 import React from 'react';
 import {

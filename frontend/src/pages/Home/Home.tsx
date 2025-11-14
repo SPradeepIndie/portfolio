@@ -4,7 +4,7 @@
  * All rights reserved.
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -23,7 +23,7 @@ import type { Project, Blog } from '../../services/api';
 import ProjectCard from '../../components/ProjectCard';
 import BlogCard from '../../components/BlogCard';
 
-export const HomePage: React.FC = () => {
+export const HomePage = () => {
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
   const [featuredBlogs, setFeaturedBlogs] = useState<Blog[]>([]);
   const navigate = useNavigate();
@@ -36,7 +36,6 @@ export const HomePage: React.FC = () => {
           apiService.getBlogs()
         ]);
         
-        // Get featured items (limit to 3 for homepage)
         setFeaturedProjects(projects.filter(p => p.featured).slice(0, 3));
         setFeaturedBlogs(blogs.filter(b => b.featured).slice(0, 3));
       } catch (error) {
@@ -48,17 +47,15 @@ export const HomePage: React.FC = () => {
   }, []);
 
   return (
-    <Container 
-      maxWidth="lg" 
-      sx={{ 
+    <Container maxWidth="lg" 
+        sx={{ 
         py: { xs: 4, sm: 6, md: 8 }, 
         px: { xs: 2, sm: 3, md: 4 },
         flex: 1
       }}
     >
       {/* Hero Section */}
-      <Box 
-        textAlign="center"
+      <Box textAlign="center"
         sx={{
           maxWidth: 'md',
           mx: 'auto',
@@ -66,11 +63,7 @@ export const HomePage: React.FC = () => {
           mb: { xs: 6, md: 8 }
         }}
       >
-        <Typography 
-          variant="h2" 
-          component="h1" 
-          gutterBottom 
-          color="primary"
+        <Typography variant="h2" component="h1" gutterBottom color="primary"
           sx={{
             fontSize: { 
               xs: '2rem', 
@@ -84,10 +77,7 @@ export const HomePage: React.FC = () => {
         >
           Welcome to My Portfolio
         </Typography>
-        <Typography 
-          variant="h5" 
-          color="text.secondary" 
-          paragraph
+        <Typography variant="h5" color="text.secondary" component="p"
           sx={{
             fontSize: { 
               xs: '1.25rem', 
@@ -98,11 +88,9 @@ export const HomePage: React.FC = () => {
             fontWeight: { xs: 400, md: 500 }
           }}
         >
-          Software Engineer & Full-Stack Developer
+          Life Time Learner
         </Typography>
-        <Typography 
-          variant="body1" 
-          color="text.secondary"
+        <Typography variant="body1" color="text.secondary"
           sx={{
             fontSize: { xs: '1rem', md: '1.125rem' },
             lineHeight: { xs: 1.6, md: 1.7 },
@@ -112,8 +100,7 @@ export const HomePage: React.FC = () => {
             mb: 4
           }}
         >
-          I'm passionate about creating innovative software solutions and building 
-          amazing user experiences. Explore my projects, read my blogs, and get in touch!
+          Explore my projects, read my blogs, and get in touch!
         </Typography>
 
         <Stack
@@ -150,12 +137,7 @@ export const HomePage: React.FC = () => {
         <>
           <Divider sx={{ mb: 4 }} />
           <Box sx={{ mb: { xs: 6, md: 8 } }}>
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-              sx={{ mb: 3 }}
-            >
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
               <Typography
                 variant="h4"
                 component="h2"
@@ -169,7 +151,7 @@ export const HomePage: React.FC = () => {
               </Typography>
               <Button
                 variant="text"
-                endIcon={<ViewAllIcon />}
+                endIcon={<ArrowForwardIcon />}
                 onClick={() => navigate('/projects')}
                 sx={{ display: { xs: 'none', sm: 'flex' } }}
               >
@@ -192,12 +174,13 @@ export const HomePage: React.FC = () => {
               {featuredProjects.map((project) => (
                 <ProjectCard key={project.id} project={project} featured={true} />
               ))}
+              {/* TODO: Create a base card component and then decorate the card as you wasnt using the decorator pattern. */}
             </Box>
 
             <Box sx={{ textAlign: 'center', display: { xs: 'block', sm: 'none' } }}>
               <Button
                 variant="outlined"
-                endIcon={<ViewAllIcon />}
+                endIcon={<ArrowForwardIcon />}
                 onClick={() => navigate('/projects')}
               >
                 View All Projects
