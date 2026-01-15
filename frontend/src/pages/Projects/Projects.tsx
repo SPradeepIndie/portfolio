@@ -19,7 +19,7 @@ import {
 import { Refresh as RefreshIcon } from '@mui/icons-material';
 import { apiService } from '../../services/api';
 import type { Project } from '../../services/api';
-import ProjectCard from '../../components/ProjectCard';
+import { ProjectCard } from '../../components';
 
 interface TabPanelProps {
   children?: React.ReactNode;

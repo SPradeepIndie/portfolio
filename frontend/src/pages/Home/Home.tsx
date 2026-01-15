@@ -20,8 +20,7 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { apiService } from '../../services/api';
 import type { Project, Blog } from '../../services/api';
-import ProjectCard from '../../components/ProjectCard';
-import BlogCard from '../../components/BlogCard';
+import { BaseCard } from '../../components';
 
 export const HomePage = () => {
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
@@ -172,9 +171,24 @@ export const HomePage = () => {
               }}
             >
               {featuredProjects.map((project) => (
-                <ProjectCard key={project.id} project={project} featured={true} />
+                <BaseCard
+                  key={project.id}
+                  title={project.title}
+                  description={project.description}
+                  featured={project.featured}
+                  category={project.category}
+                  actions={
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => navigate('/projects')}
+                      fullWidth
+                    >
+                      View Details
+                    </Button>
+                  }
+                />
               ))}
-              {/* TODO: Create a base card component and then decorate the card as you wasnt using the decorator pattern. */}
             </Box>
 
             <Box sx={{ textAlign: 'center', display: { xs: 'block', sm: 'none' } }}>
@@ -235,7 +249,23 @@ export const HomePage = () => {
               }}
             >
               {featuredBlogs.map((blog) => (
-                <BlogCard key={blog.id} blog={blog} featured={true} />
+                <BaseCard
+                  key={blog.id}
+                  title={blog.title}
+                  description={blog.excerpt}
+                  featured={blog.featured}
+                  category={blog.category}
+                  actions={
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => navigate('/blogs')}
+                      fullWidth
+                    >
+                      Read More
+                    </Button>
+                  }
+                />
               ))}
             </Box>
 

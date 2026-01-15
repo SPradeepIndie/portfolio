@@ -26,7 +26,7 @@ import {
 } from '@mui/icons-material';
 import { apiService } from '../../services/api';
 import type { Blog } from '../../services/api';
-import BlogCard from '../../components/BlogCard';
+import { BlogCard } from '../../components';
 
 interface TabPanelProps {
   children?: React.ReactNode;
