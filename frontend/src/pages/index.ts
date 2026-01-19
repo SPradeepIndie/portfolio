@@ -4,7 +4,7 @@
  * All rights reserved.
  */
 
-export { HomePage } from './Home'
-export { ProjectsPage } from './Projects'
-export { BlogsPage } from './Blogs'
-export { MorePage } from './More'
+export { HomePage } from './Home/Home';
+export { ProjectsPage } from './Projects/Projects';
+export { BlogsPage } from './Blogs/Blogs';
+export { MorePage } from './More/More';

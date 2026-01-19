@@ -1,0 +1,608 @@
+{
+	"info": {
+		"_postman_id": "portfolio-backend-api",
+		"name": "Portfolio Backend API",
+		"description": "Complete API collection for managing portfolio content. Use these endpoints to manually add/update projects, blogs, and contact information.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "API Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"health"
+							]
+						},
+						"description": "Check if the API is running"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Projects",
+			"item": [
+				{
+					"name": "Get All Projects",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/projects",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"projects"
+							]
+						},
+						"description": "Retrieve all projects"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Single Project",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/projects/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"projects",
+								"1"
+							]
+						},
+						"description": "Retrieve a single project by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Project",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"My Awesome Project\",\n  \"description\": \"A comprehensive description of the project, its goals, and achievements.\",\n  \"technologies\": [\"React\", \"TypeScript\", \"Node.js\", \"PostgreSQL\"],\n  \"github\": \"https://github.com/yourusername/project\",\n  \"demo\": \"https://project-demo.com\",\n  \"image\": \"/api/placeholder/400/300\",\n  \"category\": \"Full Stack\",\n  \"featured\": true,\n  \"status\": \"Completed\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/projects",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"projects"
+							]
+						},
+						"description": "Create a new project"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Project",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Updated Project Title\",\n  \"description\": \"Updated description\",\n  \"technologies\": [\"React\", \"TypeScript\", \"Node.js\"],\n  \"github\": \"https://github.com/yourusername/project\",\n  \"demo\": \"https://project-demo.com\",\n  \"image\": \"/api/placeholder/400/300\",\n  \"category\": \"Frontend\",\n  \"featured\": false,\n  \"status\": \"In Progress\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/projects/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"projects",
+								"1"
+							]
+						},
+						"description": "Update an existing project"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Project",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/projects/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"projects",
+								"1"
+							]
+						},
+						"description": "Delete a project by ID"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Blogs",
+			"item": [
+				{
+					"name": "Get All Blogs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/blogs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"blogs"
+							]
+						},
+						"description": "Retrieve all blog posts"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Single Blog",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/blogs/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"blogs",
+								"1"
+							]
+						},
+						"description": "Retrieve a single blog by ID (increments view count)"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Blog (without PDF)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"My New Blog Post\",\n  \"excerpt\": \"A brief summary of what this blog post is about.\",\n  \"content\": \"Full blog content goes here. This can be quite long and detailed...\",\n  \"author\": \"Your Name\",\n  \"read_time\": \"8 min read\",\n  \"tags\": [\"React\", \"JavaScript\", \"Web Development\"],\n  \"featured\": true,\n  \"image\": \"/api/placeholder/600/400\",\n  \"category\": \"Frontend Development\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/blogs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"blogs"
+							]
+						},
+						"description": "Create a new blog post without PDF"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Blog (with PDF)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "title",
+									"value": "My Blog Post with PDF",
+									"type": "text"
+								},
+								{
+									"key": "excerpt",
+									"value": "A brief summary of the blog post",
+									"type": "text"
+								},
+								{
+									"key": "content",
+									"value": "Full blog content goes here...",
+									"type": "text"
+								},
+								{
+									"key": "author",
+									"value": "Your Name",
+									"type": "text"
+								},
+								{
+									"key": "read_time",
+									"value": "10 min read",
+									"type": "text"
+								},
+								{
+									"key": "tags",
+									"value": "[\"React\", \"TypeScript\", \"Node.js\"]",
+									"type": "text"
+								},
+								{
+									"key": "featured",
+									"value": "true",
+									"type": "text"
+								},
+								{
+									"key": "image",
+									"value": "/api/placeholder/600/400",
+									"type": "text"
+								},
+								{
+									"key": "category",
+									"value": "Web Development",
+									"type": "text"
+								},
+								{
+									"key": "pdf",
+									"type": "file",
+									"src": [],
+									"description": "Select a PDF file to upload"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/blogs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"blogs"
+							]
+						},
+						"description": "Create a new blog post with PDF attachment"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Blog",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "title",
+									"value": "Updated Blog Title",
+									"type": "text"
+								},
+								{
+									"key": "excerpt",
+									"value": "Updated excerpt",
+									"type": "text"
+								},
+								{
+									"key": "content",
+									"value": "Updated blog content...",
+									"type": "text"
+								},
+								{
+									"key": "author",
+									"value": "Your Name",
+									"type": "text"
+								},
+								{
+									"key": "read_time",
+									"value": "12 min read",
+									"type": "text"
+								},
+								{
+									"key": "tags",
+									"value": "[\"React\", \"JavaScript\"]",
+									"type": "text"
+								},
+								{
+									"key": "featured",
+									"value": "false",
+									"type": "text"
+								},
+								{
+									"key": "image",
+									"value": "/api/placeholder/600/400",
+									"type": "text"
+								},
+								{
+									"key": "category",
+									"value": "Frontend Development",
+									"type": "text"
+								},
+								{
+									"key": "pdf",
+									"type": "file",
+									"src": [],
+									"description": "Optional: Upload new PDF to replace existing"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/blogs/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"blogs",
+								"1"
+							]
+						},
+						"description": "Update an existing blog post (optionally with new PDF)"
+					},
+					"response": []
+				},
+				{
+					"name": "Upload PDF to Existing Blog",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "pdf",
+									"type": "file",
+									"src": [],
+									"description": "Select a PDF file to upload"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/blogs/1/upload-pdf",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"blogs",
+								"1",
+								"upload-pdf"
+							]
+						},
+						"description": "Add or replace PDF for an existing blog post"
+					},
+					"response": []
+				},
+				{
+					"name": "Increment Blog Likes",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/blogs/1/like",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"blogs",
+								"1",
+								"like"
+							]
+						},
+						"description": "Increment the like count for a blog (used by frontend)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Blog",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/blogs/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"blogs",
+								"1"
+							]
+						},
+						"description": "Delete a blog post by ID"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Contact",
+			"item": [
+				{
+					"name": "Get Contact Info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/contact/info",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"contact",
+								"info"
+							]
+						},
+						"description": "Get your contact information"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Contact Info",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Your Full Name\",\n  \"title\": \"Full Stack Developer\",\n  \"bio\": \"Passionate developer with experience in modern web technologies including React, Node.js, PostgreSQL, and cloud platforms.\",\n  \"email\": \"your.email@example.com\",\n  \"phone\": \"+1 (555) 123-4567\",\n  \"linkedin\": \"https://linkedin.com/in/yourprofile\",\n  \"github\": \"https://github.com/yourusername\",\n  \"website\": \"https://yourwebsite.com\",\n  \"skills\": [\"React\", \"TypeScript\", \"Node.js\", \"Express\", \"PostgreSQL\", \"Docker\", \"AWS\", \"Git\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/contact/info",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"contact",
+								"info"
+							]
+						},
+						"description": "Update your contact information"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Contact Messages",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/contact/messages",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"contact",
+								"messages"
+							]
+						},
+						"description": "View all messages submitted by visitors"
+					},
+					"response": []
+				},
+				{
+					"name": "Submit Contact Form (Frontend)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Visitor Name\",\n  \"email\": \"visitor@example.com\",\n  \"message\": \"Hello! I'd like to discuss a potential project...\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/contact",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"contact"
+							]
+						},
+						"description": "Submit a contact form message (used by frontend visitors)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Experience",
+			"item": [
+				{
+					"name": "Get All Experience",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/portfolio",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"portfolio"
+							]
+						},
+						"description": "Get all experience entries (included in portfolio endpoint)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Portfolio (Frontend)",
+			"item": [
+				{
+					"name": "Get Complete Portfolio",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/portfolio",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"portfolio"
+							]
+						},
+						"description": "Get complete portfolio data (contact info, featured projects, experience)"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:5000",
+			"type": "string"
+		}
+	]
+}

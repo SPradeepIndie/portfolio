@@ -9,10 +9,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { useThemeMode } from './hooks/useTheme'
 import { lightTheme, darkTheme } from './theme'
 import { Layout } from './components/Layout'
-import { HomePage } from './pages/Home'
-import { ProjectsPage } from './pages/Projects'
-import { BlogsPage } from './pages/Blogs'
-import { MorePage } from './pages/More'
+import { HomePage, ProjectsPage, BlogsPage, MorePage } from './pages'
 import './App.css'
 
 function App() {
