@@ -8,7 +8,7 @@ import axios from 'axios';
 // Create axios instance with base configuration
 const api = axios.create({
   baseURL: import.meta.env.PROD 
-    ? 'https://your-api-domain.com' 
+    ? '' // Empty string = same origin, uses Nginx proxy at /api
     : 'http://localhost:5000',
   timeout: 10000,
   headers: {
