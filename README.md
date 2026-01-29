@@ -69,6 +69,14 @@ npm install
 
 5. **Start Development Servers:**
 
+**Option 1: Using Docker (Recommended for Development):**
+```bash
+# Build and run all services with Docker Compose
+docker-compose -f docker-compose.yml -f docker-compose.build.yml up -d
+```
+
+**Option 2: Manual Setup:**
+
 **Backend (Terminal 1):**
 ```bash
 cd backend
