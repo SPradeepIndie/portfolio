@@ -5,11 +5,13 @@ version: '3.8'
 
 services:
   backend:
+    image: ${DOCKER_USERNAME:-yourusername}/portfolio-backend:${TAG:-latest}
     build:
       context: ./backend
       dockerfile: Dockerfile
 
   frontend:
+    image: ${DOCKER_USERNAME:-yourusername}/portfolio-frontend:${TAG:-latest}
     build:
       context: ./frontend
       dockerfile: Dockerfile
