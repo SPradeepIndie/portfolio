@@ -138,7 +138,7 @@ export const Header: React.FC = () => {
               transition: 'color 0.3s ease',
             }}
           >
-            Portfolio
+            My Portfolio
           </Typography>
 
           {/* Desktop Navigation */}

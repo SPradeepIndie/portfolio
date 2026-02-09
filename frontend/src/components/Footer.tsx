@@ -27,7 +27,6 @@ import {
   Phone,
   LinkedIn,
   GitHub,
-  Twitter,
   Send,
   Close,
 } from '@mui/icons-material'
@@ -38,7 +37,6 @@ interface ContactInfo {
   phone: string
   linkedin: string
   github: string
-  twitter: string
 }
 
 interface EmailForm {
@@ -49,14 +47,13 @@ interface EmailForm {
 }
 
 const contactInfo: ContactInfo = {
-  email: 'your.email@example.com',
-  phone: '+1 (555) 123-4567',
-  linkedin: 'https://linkedin.com/in/yourprofile',
-  github: 'https://github.com/yourusername',
-  twitter: 'https://twitter.com/yourusername',
+  email: 'sanjayapradeepnet@example.com',
+  phone: '+94 76 158 0881',
+  linkedin: 'www.linkedin.com/in/sanjaya-pradeep',
+  github: 'https://github.com/SPradeepIndie',
 }
 
-export const Footer: React.FC = () => {
+export const Footer = () => {
   const theme = useTheme()
   const [emailDialogOpen, setEmailDialogOpen] = useState(false)
   const [snackbarOpen, setSnackbarOpen] = useState(false)
@@ -82,16 +79,16 @@ export const Footer: React.FC = () => {
   const handleSendEmail = () => {
     // In a real app, you would send this to your backend API
     console.log('Sending email:', emailForm)
-    
+
     // Create mailto link for now
     const subject = encodeURIComponent(emailForm.subject)
     const body = encodeURIComponent(
       `Name: ${emailForm.name}\nEmail: ${emailForm.email}\n\nMessage:\n${emailForm.message}`
     )
     const mailtoLink = `mailto:${contactInfo.email}?subject=${subject}&body=${body}`
-    
+
     window.open(mailtoLink, '_blank')
-    
+
     handleEmailDialogClose()
     setSnackbarOpen(true)
   }
@@ -108,106 +105,36 @@ export const Footer: React.FC = () => {
         py: 4,
       }}
     >
-      <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
+      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
         <Box
           sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: 'repeat(2, 1fr)',
-              md: 'repeat(3, 1fr)',
-            },
-            gap: { xs: 3, sm: 4, md: 6 },
-            alignItems: 'start',
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: { xs: 'center', sm: 'space-between' },
+            alignItems: { xs: 'center', sm: 'flex-start' },
+            gap: { xs: 3, sm: 0 },
+            textAlign: { xs: 'center', sm: 'left' },
           }}
         >
-          {/* Contact Information */}
-          <Box>
-            <Typography 
-              variant="h6" 
-              gutterBottom 
-              color="primary"
-              sx={{ 
-                fontSize: { xs: '1.1rem', md: '1.25rem' },
-                mb: { xs: 2, md: 3 }
-              }}
-            >
-              Get In Touch
-            </Typography>
-            <Stack spacing={{ xs: 1.5, md: 2 }}>
-              <Box 
-                display="flex" 
-                alignItems="center" 
-                gap={1.5}
-                sx={{ flexWrap: { xs: 'wrap', sm: 'nowrap' } }}
-              >
-                <Email color="secondary" sx={{ flexShrink: 0 }} />
-                <Link
-                  href={`mailto:${contactInfo.email}`}
-                  color="inherit"
-                  underline="hover"
-                  sx={{ 
-                    fontSize: { xs: '0.875rem', md: '1rem' },
-                    wordBreak: 'break-word'
-                  }}
-                >
-                  {contactInfo.email}
-                </Link>
-              </Box>
-              <Box 
-                display="flex" 
-                alignItems="center" 
-                gap={1.5}
-                sx={{ flexWrap: { xs: 'wrap', sm: 'nowrap' } }}
-              >
-                <Phone color="secondary" sx={{ flexShrink: 0 }} />
-                <Link
-                  href={`tel:${contactInfo.phone}`}
-                  color="inherit"
-                  underline="hover"
-                  sx={{ fontSize: { xs: '0.875rem', md: '1rem' } }}
-                >
-                  {contactInfo.phone}
-                </Link>
-              </Box>
-              <Button
-                variant="contained"
-                color="secondary"
-                startIcon={<Send />}
-                onClick={handleEmailDialogOpen}
-                sx={{ 
-                  mt: { xs: 2, md: 3 }, 
-                  alignSelf: 'flex-start',
-                  fontSize: { xs: '0.875rem', md: '1rem' },
-                  px: { xs: 3, md: 4 },
-                  py: { xs: 1, md: 1.5 }
-                }}
-              >
-                Send Email
-              </Button>
-            </Stack>
-          </Box>
-
-          {/* Social Links */}
-          <Box>
-            <Typography 
-              variant="h6" 
-              gutterBottom 
-              color="primary"
-              sx={{ 
-                fontSize: { xs: '1.1rem', md: '1.25rem' },
-                mb: { xs: 2, md: 3 }
-              }}
-            >
-              Connect With Me
-            </Typography>
-            <Stack 
-              direction="row" 
+          {/* Social Links and about */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: { xs: 'center', sm: 'flex-start' },
+              mb: { xs: 3, sm: 0 },
+              maxWidth: { xs: '100%', sm: 340 },
+              flex: 1,
+            }}
+          >
+            <Stack
+              direction="row"
               spacing={{ xs: 1, md: 1.5 }}
-              sx={{ 
-                justifyContent: { xs: 'flex-start', sm: 'flex-start' },
+              sx={{
+                justifyContent: { xs: 'center', sm: 'flex-start' },
                 flexWrap: 'wrap',
-                gap: { xs: 1, md: 1.5 }
+                gap: { xs: 1, md: 1.5 },
+                mb: 2,
               }}
             >
               <IconButton
@@ -217,7 +144,7 @@ export const Footer: React.FC = () => {
                 rel="noopener noreferrer"
                 color="inherit"
                 sx={{
-                  p: { xs: 1, md: 1.5 },
+                  p: 1,
                   '&:hover': {
                     color: theme.palette.secondary.main,
                     transform: 'translateY(-2px)',
@@ -234,7 +161,7 @@ export const Footer: React.FC = () => {
                 rel="noopener noreferrer"
                 color="inherit"
                 sx={{
-                  p: { xs: 1, md: 1.5 },
+                  p: 1,
                   '&:hover': {
                     color: theme.palette.secondary.main,
                     transform: 'translateY(-2px)',
@@ -244,51 +171,98 @@ export const Footer: React.FC = () => {
               >
                 <GitHub sx={{ fontSize: { xs: 24, md: 28 } }} />
               </IconButton>
-              <IconButton
-                component="a"
-                href={contactInfo.twitter}
-                target="_blank"
-                rel="noopener noreferrer"
-                color="inherit"
-                sx={{
-                  p: { xs: 1, md: 1.5 },
-                  '&:hover': {
-                    color: theme.palette.secondary.main,
-                    transform: 'translateY(-2px)',
-                  },
-                  transition: 'all 0.3s ease',
-                }}
-              >
-                <Twitter sx={{ fontSize: { xs: 24, md: 28 } }} />
-              </IconButton>
             </Stack>
-          </Box>
-
-          {/* Quick Info */}
-          <Box>
-            <Typography 
-              variant="h6" 
-              gutterBottom 
-              color="primary"
-              sx={{ 
-                fontSize: { xs: '1.1rem', md: '1.25rem' },
-                mb: { xs: 2, md: 3 }
-              }}
-            >
-              About This Portfolio
-            </Typography>
-            <Typography 
-              variant="body2" 
+            <Typography
+              variant="body2"
               color="text.secondary"
-              sx={{ 
+              sx={{
                 fontSize: { xs: '0.875rem', md: '1rem' },
-                lineHeight: { xs: 1.5, md: 1.6 }
+                lineHeight: { xs: 1.5, md: 1.6 },
+                maxWidth: 320,
               }}
             >
-              Built with React, TypeScript, and Material-UI. 
-              Showcasing modern web development practices with 
+              Built with React, TypeScript, and Material-UI.
+              Showcasing modern web development practices with
               responsive design and clean architecture.
             </Typography>
+          </Box>
+
+          {/* Contact Information */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: { xs: 'center', sm: 'flex-end' },
+              maxWidth: { xs: '100%', sm: 340 },
+              flex: 1,
+            }}
+          >
+            <Typography
+              variant="h6"
+              gutterBottom
+              color="primary"
+              sx={{
+                fontSize: { xs: '1.1rem', md: '1.25rem' },
+                mb: { xs: 2, md: 3 },
+                textAlign: { xs: 'center', sm: 'left' },
+              }}
+            >
+              Get In Touch
+            </Typography>
+            <Stack spacing={{ xs: 1.5, md: 2 }} sx={{ width: { xs: '100%', sm: 'auto' }, alignItems: { xs: 'center', sm: 'flex-start' } }}>
+              <Box
+                display="flex"
+                alignItems="center"
+                gap={1.5}
+                sx={{ flexWrap: { xs: 'wrap', sm: 'nowrap' }, justifyContent: { xs: 'center', sm: 'flex-start' } }}
+              >
+                <Email color="secondary" sx={{ flexShrink: 0 }} />
+                <Link
+                  href={`mailto:${contactInfo.email}`}
+                  color="inherit"
+                  underline="hover"
+                  sx={{
+                    fontSize: { xs: '0.875rem', md: '1rem' },
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {contactInfo.email}
+                </Link>
+              </Box>
+              <Box
+                display="flex"
+                alignItems="center"
+                gap={1.5}
+                sx={{ flexWrap: { xs: 'wrap', sm: 'nowrap' }, justifyContent: { xs: 'center', sm: 'flex-start' } }}
+              >
+                <Phone color="secondary" sx={{ flexShrink: 0 }} />
+                <Link
+                  href={`tel:${contactInfo.phone}`}
+                  color="inherit"
+                  underline="hover"
+                  sx={{ fontSize: { xs: '0.875rem', md: '1rem' } }}
+                >
+                  {contactInfo.phone}
+                </Link>
+              </Box>
+              <Button
+                variant="contained"
+                color="secondary"
+                startIcon={<Send />}
+                onClick={handleEmailDialogOpen}
+                size="small"
+                sx={{
+                  mt: { xs: 2, md: 3 },
+                  alignSelf: { xs: 'center', sm: 'flex-start' },
+                  fontSize: { xs: '0.8rem', md: '0.9rem' },
+                  px: { xs: 1.5, md: 2 },
+                  py: { xs: 0.5, md: 0.75 },
+                  minWidth: 0,
+                }}
+              >
+                Send Email
+              </Button>
+            </Stack>
           </Box>
         </Box>
 
