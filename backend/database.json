@@ -1,0 +1,29 @@
+{
+  "dev": {
+    "driver": "pg",
+    "user": "portfolio_user",
+    "password": "portfolio_pass",
+    "host": "localhost",
+    "port": 5432,
+    "database": "portfolio",
+    "schema": "public"
+  },
+  "test": {
+    "driver": "pg",
+    "user": "portfolio_user",
+    "password": "portfolio_pass",
+    "host": "localhost",
+    "port": 5432,
+    "database": "portfolio_test",
+    "schema": "public"
+  },
+  "prod": {
+    "driver": "pg",
+    "user": "${DB_USER}",
+    "password": "${DB_PASSWORD}",
+    "host": "${DB_HOST}",
+    "port": "${DB_PORT}",
+    "database": "${DB_NAME}",
+    "schema": "public"
+  }
+}

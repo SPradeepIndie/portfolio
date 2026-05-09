@@ -100,8 +100,7 @@ export const LoginPage = () => {
                 mb: 3,
               }}
             >
-              Use your account to refresh tokens, access your dedicated user page, and continue
-              session management without re-authenticating on every visit.
+              Use your accout to manage the portfolio content
             </Typography>
             <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap' }}>
               <Button

@@ -1,0 +1,5 @@
+{
+  "migrationDir": "migrations",
+  "changeLogTableName": "migrations",
+  "env": "dev"
+}
