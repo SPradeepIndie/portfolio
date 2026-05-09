@@ -16,11 +16,16 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  Avatar,
+  ListItemIcon,
+  ListItemText,
+  Divider,
 } from '@mui/material'
-import { Menu as MenuIcon } from '@mui/icons-material'
-import { Link, useLocation } from 'react-router-dom'
+import { Menu as MenuIcon, AccountCircle, Logout, Person } from '@mui/icons-material'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { ThemeToggle } from './ThemeToggle'
+import { useAuth } from '../hooks/useAuth'
 
 interface NavigationItem {
   label: string
@@ -37,8 +42,11 @@ const navigationItems: NavigationItem[] = [
 export const Header: React.FC = () => {
   const theme = useTheme()
   const location = useLocation()
+  const navigate = useNavigate()
+  const { isAuthenticated, user, logout } = useAuth()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(null)
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
@@ -46,6 +54,20 @@ export const Header: React.FC = () => {
 
   const handleMenuClose = () => {
     setAnchorEl(null)
+  }
+
+  const handleUserMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setUserMenuAnchorEl(event.currentTarget)
+  }
+
+  const handleUserMenuClose = () => {
+    setUserMenuAnchorEl(null)
+  }
+
+  const handleLogout = async () => {
+    handleUserMenuClose()
+    await logout()
+    navigate('/login')
   }
 
   const isActivePath = (path: string) => {
@@ -166,6 +188,33 @@ export const Header: React.FC = () => {
             gap: { xs: 0.5, sm: 1 }
           }}>
             <ThemeToggle />
+
+            <IconButton
+              size="large"
+              aria-label="user account"
+              aria-controls="user-menu"
+              aria-haspopup="true"
+              onClick={isAuthenticated ? handleUserMenuOpen : () => navigate('/login')}
+              color="inherit"
+              sx={{
+                p: { xs: 1, sm: 1.5 },
+                border: `1px solid ${theme.palette.divider}`,
+                backgroundColor: isAuthenticated ? theme.palette.action.hover : 'transparent',
+                '&:hover': {
+                  backgroundColor: theme.palette.action.hover,
+                },
+              }}
+            >
+              {isAuthenticated ? (
+                <Avatar
+                  sx={{ width: 28, height: 28, bgcolor: 'primary.main' }}
+                >
+                  {(user?.full_name?.[0] || 'U').toUpperCase()}
+                </Avatar>
+              ) : (
+                <AccountCircle />
+              )}
+            </IconButton>
             
             {/* Mobile Menu Button */}
             {isMobile && (
@@ -233,6 +282,53 @@ export const Header: React.FC = () => {
               {item.label}
             </MenuItem>
           ))}
+        </Menu>
+
+        <Menu
+          id="user-menu"
+          anchorEl={userMenuAnchorEl}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'right',
+          }}
+          keepMounted
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+          open={Boolean(userMenuAnchorEl)}
+          onClose={handleUserMenuClose}
+          PaperProps={{
+            sx: {
+              mt: 1,
+              minWidth: 220,
+            }
+          }}
+        >
+          <MenuItem disabled sx={{ opacity: 1, minHeight: 64 }}>
+            <ListItemIcon>
+              <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
+                {(user?.full_name?.[0] || 'U').toUpperCase()}
+              </Avatar>
+            </ListItemIcon>
+            <ListItemText
+              primary={user?.full_name || 'Guest'}
+              secondary={user?.email || 'Not signed in'}
+            />
+          </MenuItem>
+          <Divider />
+          <MenuItem component={Link} to="/user" onClick={handleUserMenuClose}>
+            <ListItemIcon>
+              <Person fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>My Profile</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={handleLogout}>
+            <ListItemIcon>
+              <Logout fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Logout</ListItemText>
+          </MenuItem>
         </Menu>
       </Container>
     </AppBar>

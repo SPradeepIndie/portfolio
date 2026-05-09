@@ -4,21 +4,54 @@
  */
 
 import axios from 'axios';
+import { clearAuthTokens, getAccessToken, getRefreshToken, saveAuthTokens } from './authStorage';
+
+const apiBaseURL = import.meta.env.PROD
+  ? ''
+  : 'http://localhost:5000';
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: import.meta.env.PROD 
-    ? '' // Empty string = same origin, uses Nginx proxy at /api
-    : 'http://localhost:5000',
+  baseURL: apiBaseURL,
   timeout: 10000,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
+const refreshClient = axios.create({
+  baseURL: apiBaseURL,
+  timeout: 10000,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+const getErrorMessage = (error: unknown, fallbackMessage: string) => {
+  if (axios.isAxiosError(error)) {
+    const responseData = error.response?.data as
+      | { error?: string; message?: string; detail?: string }
+      | undefined;
+
+    return responseData?.error || responseData?.message || responseData?.detail || error.message || fallbackMessage;
+  }
+
+  if (error instanceof Error) {
+    return error.message || fallbackMessage;
+  }
+
+  return fallbackMessage;
+};
+
 // Request interceptor for logging
 api.interceptors.request.use(
   (config) => {
+    const accessToken = getAccessToken();
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
     console.log(`Making ${config.method?.toUpperCase()} request to ${config.url}`);
     return config;
   },
@@ -32,7 +65,37 @@ api.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      const refreshToken = getRefreshToken();
+      if (!refreshToken || originalRequest.url?.includes('/api/auth/refresh')) {
+        clearAuthTokens();
+        console.error('API Error:', error.response?.data || error.message);
+        return Promise.reject(error);
+      }
+
+      try {
+        const refreshResponse = await refreshClient.post('/api/auth/refresh', { refreshToken });
+        const { accessToken, refreshToken: nextRefreshToken } = refreshResponse.data.data;
+        saveAuthTokens({ accessToken, refreshToken: nextRefreshToken });
+        originalRequest.headers = originalRequest.headers ?? {};
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        return api(originalRequest);
+      } catch (refreshError: unknown) {
+        const refreshErrorMessage = refreshError instanceof Error ? refreshError.message : 'Refresh failed';
+        const refreshErrorData = typeof refreshError === 'object' && refreshError && 'response' in refreshError
+          ? (refreshError as { response?: { data?: unknown } }).response?.data
+          : undefined;
+        clearAuthTokens();
+        console.error('API Error:', refreshErrorData || refreshErrorMessage);
+        return Promise.reject(refreshError);
+      }
+    }
+
     console.error('API Error:', error.response?.data || error.message);
     return Promise.reject(error);
   }
@@ -84,6 +147,42 @@ export interface PortfolioData {
   location: string;
 }
 
+export interface AuthUser {
+  id: number;
+  full_name: string;
+  email: string;
+  role: 'user' | 'admin';
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  last_login_at: string | null;
+}
+
+export interface AuthSession {
+  user: AuthUser;
+  accessToken: string;
+  refreshToken: string;
+  tokenType: string;
+  expiresIn: string;
+}
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface RegisterPayload {
+  full_name: string;
+  email: string;
+  password: string;
+}
+
+export interface UpdateProfilePayload {
+  full_name?: string;
+  email?: string;
+  password?: string;
+}
+
 // API service functions
 export const apiService = {
   // Projects
@@ -93,7 +192,7 @@ export const apiService = {
       return response.data.data;
     } catch (error) {
       console.error('Failed to fetch projects:', error);
-      throw new Error('Failed to load projects');
+      throw new Error(getErrorMessage(error, 'Failed to load projects'));
     }
   },
 
@@ -103,7 +202,7 @@ export const apiService = {
       return projects.find(project => project.id === id) || null;
     } catch (error) {
       console.error(`Failed to fetch project ${id}:`, error);
-      throw new Error('Failed to load project');
+      throw new Error(getErrorMessage(error, 'Failed to load project'));
     }
   },
 
@@ -114,7 +213,7 @@ export const apiService = {
       return response.data.data;
     } catch (error) {
       console.error('Failed to fetch blogs:', error);
-      throw new Error('Failed to load blogs');
+      throw new Error(getErrorMessage(error, 'Failed to load blogs'));
     }
   },
 
@@ -124,7 +223,7 @@ export const apiService = {
       return blogs.find(blog => blog.id === id) || null;
     } catch (error) {
       console.error(`Failed to fetch blog ${id}:`, error);
-      throw new Error('Failed to load blog');
+      throw new Error(getErrorMessage(error, 'Failed to load blog'));
     }
   },
 
@@ -135,7 +234,7 @@ export const apiService = {
       return response.data;
     } catch (error) {
       console.error('Failed to fetch portfolio:', error);
-      throw new Error('Failed to load portfolio data');
+      throw new Error(getErrorMessage(error, 'Failed to load portfolio data'));
     }
   },
 
@@ -145,7 +244,61 @@ export const apiService = {
       await api.post('/api/contact', data);
     } catch (error) {
       console.error('Failed to send contact message:', error);
-      throw new Error('Failed to send message');
+      throw new Error(getErrorMessage(error, 'Failed to send message'));
+    }
+  },
+
+  async login(payload: LoginPayload): Promise<AuthSession> {
+    try {
+      const response = await api.post<{ success: boolean; data: AuthSession }>('/api/auth/login', payload);
+      return response.data.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Login failed'));
+    }
+  },
+
+  async register(payload: RegisterPayload): Promise<void> {
+    try {
+      await api.post('/api/auth/register', payload);
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Registration failed'));
+    }
+  },
+
+  async refreshTokens(refreshToken?: string): Promise<AuthSession> {
+    try {
+      const response = await refreshClient.post<{ success: boolean; data: AuthSession }>('/api/auth/refresh', {
+        refreshToken,
+      });
+      return response.data.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Session refresh failed'));
+    }
+  },
+
+  async logout(refreshToken?: string): Promise<void> {
+    try {
+      await api.post('/api/auth/logout', { refreshToken });
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Logout failed'));
+    }
+  },
+
+  async getCurrentUser(): Promise<AuthUser> {
+    try {
+      const response = await api.get<{ success: boolean; data: AuthUser }>('/api/auth/me');
+      return response.data.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to load current user'));
+    }
+  },
+
+  async updateCurrentUser(payload: UpdateProfilePayload): Promise<AuthUser> {
+    try {
+      const response = await api.put<{ success: boolean; data: AuthUser }>('/api/auth/me', payload);
+      return response.data.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to update profile'));
     }
   }
 };

@@ -6,6 +6,7 @@
 
 import express from 'express';
 import * as contactService from '../services/contactService.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -14,9 +15,9 @@ router.get('/info', contactService.getContactInfo);
 router.post('/', contactService.submitContactForm);
 
 // Private routes (manual data management via Postman)
-router.put('/info', contactService.updateContactInfo);
-router.get('/messages', contactService.getAllMessages);
-router.get('/messages/:id', contactService.getMessageById);
-router.delete('/messages/:id', contactService.deleteMessage);
+router.put('/info', authenticateToken, contactService.updateContactInfo);
+router.get('/messages', authenticateToken, contactService.getAllMessages);
+router.get('/messages/:id', authenticateToken, contactService.getMessageById);
+router.delete('/messages/:id', authenticateToken, contactService.deleteMessage);
 
 export default router;

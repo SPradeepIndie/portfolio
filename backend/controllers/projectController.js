@@ -6,6 +6,7 @@
 
 import express from 'express';
 import * as projectService from '../services/projectService.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -16,8 +17,8 @@ router.get('/category/:category', projectService.getProjectsByCategory);
 router.get('/:id', projectService.getProjectById);
 
 // Private routes (manual data management via Postman)
-router.post('/', projectService.createProject);
-router.put('/:id', projectService.updateProject);
-router.delete('/:id', projectService.deleteProject);
+router.post('/', authenticateToken, projectService.createProject);
+router.put('/:id', authenticateToken, projectService.updateProject);
+router.delete('/:id', authenticateToken, projectService.deleteProject);
 
 export default router;

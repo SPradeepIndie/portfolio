@@ -9,6 +9,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
+import swaggerUi from 'swagger-ui-express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -17,6 +19,10 @@ import projectController from './controllers/projectController.js';
 import blogController from './controllers/blogController.js';
 import contactController from './controllers/contactController.js';
 import portfolioController from './controllers/portfolioController.js';
+import authController from './controllers/authController.js';
+import userController from './controllers/userController.js';
+import pdfController from './controllers/pdfController.js';
+import swaggerDocument from './api/swagger.js';
 
 // Import error handling middleware
 import { errorHandler, notFound } from './middleware/errorHandler.js';
@@ -38,6 +44,7 @@ app.use(cors({
 app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -53,10 +60,17 @@ app.get('/api/health', (req, res) => {
 });
 
 // API Routes
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.get('/api/docs-json', (req, res) => {
+  res.json(swaggerDocument);
+});
 app.use('/api/portfolio', portfolioController);
 app.use('/api/projects', projectController);
 app.use('/api/blogs', blogController);
 app.use('/api/contact', contactController);
+app.use('/api/auth', authController);
+app.use('/api/admin/users', userController);
+app.use('/api/admin/pdfs', pdfController);
 
 // Placeholder image endpoint
 app.get('/api/placeholder/:width/:height', (req, res) => {
@@ -87,4 +101,5 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📖 API Health: http://localhost:${PORT}/api/health`);
   console.log(`📝 Portfolio Data: http://localhost:${PORT}/api/portfolio`);
+  console.log(`📚 Swagger Docs: http://localhost:${PORT}/api/docs`);
 });
