@@ -18,12 +18,11 @@ import {
   Logout,
   Refresh,
   Save,
-  Verified,
 } from '@mui/icons-material'
 import { useAuth } from '../../hooks/useAuth'
 
 export const UserPage = () => {
-  const { user, logout, refreshSession, updateProfile, accessToken, refreshToken, isLoading } = useAuth()
+  const { user, logout, refreshSession, updateProfile, isLoading } = useAuth()
   const [fullName, setFullName] = useState(user?.full_name ?? '')
   const [email, setEmail] = useState(user?.email ?? '')
   const [password, setPassword] = useState('')
@@ -78,21 +77,17 @@ export const UserPage = () => {
 
   return (
     <Container
-      maxWidth="lg"
+      maxWidth="sm"
       sx={{
         py: { xs: 4, sm: 6, md: 8 },
-        px: { xs: 2, sm: 3, md: 4 },
+        px: { xs: 2, sm: 3 },
         flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
     >
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', md: '0.95fr 1.05fr' },
-          gap: { xs: 3, md: 4 },
-          alignItems: 'start',
-        }}
-      >
+      <Box sx={{ width: '100%' }}>
         <Card
           elevation={4}
           sx={{
@@ -100,7 +95,7 @@ export const UserPage = () => {
             overflow: 'hidden',
           }}
         >
-          <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
+          <CardContent sx={{ p: { xs: 3, sm: 4, md: 5 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
               <Avatar
                 sx={{
@@ -112,34 +107,42 @@ export const UserPage = () => {
                 <AccountCircle fontSize="large" />
               </Avatar>
               <Box>
-                <Typography variant="h4" component="h1" sx={{ fontWeight: 800 }}>
+                <Typography variant="h5" component="h1" sx={{ fontWeight: 800 }}>
                   User Area
                 </Typography>
-                <Typography color="text.secondary">
-                  Manage your account and session tokens.
+                <Typography color="text.secondary" variant="body2">
+                  Manage your account details and settings.
                 </Typography>
               </Box>
             </Box>
 
-            <Divider sx={{ mb: 3 }} />
+            <Divider sx={{ mb: 4 }} />
 
             {message && (
-              <Alert severity="success" sx={{ mb: 2 }}>
+              <Alert severity="success" sx={{ mb: 3 }}>
                 {message}
               </Alert>
             )}
             {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
+              <Alert severity="error" sx={{ mb: 3 }}>
                 {error}
               </Alert>
             )}
 
-            <Stack spacing={2}>
-              <Box>
-                <Typography variant="overline" color="text.secondary">
+            <Stack spacing={3}>
+              <Box
+                sx={{
+                  p: 2.5,
+                  bgcolor: 'background.default',
+                  borderRadius: 2,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                }}
+              >
+                <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
                   Account Status
                 </Typography>
-                <Box sx={{ mt: 1 }}>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                   <Chip
                     label={user?.is_active ? 'Active' : 'Inactive'}
                     color={user?.is_active ? 'success' : 'default'}
@@ -149,23 +152,57 @@ export const UserPage = () => {
                     label={user?.role ?? 'user'}
                     color="secondary"
                     variant="outlined"
-                    sx={{ ml: 1 }}
                   />
                 </Box>
               </Box>
 
-              <TextField label="Full Name" value={fullName} onChange={(event) => setFullName(event.target.value)} fullWidth />
-              <TextField label="Email" value={email} onChange={(event) => setEmail(event.target.value)} fullWidth />
+              <Box
+                sx={{
+                  p: 2.5,
+                  bgcolor: 'background.default',
+                  borderRadius: 2,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                }}
+              >
+                <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  Profile Information
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 0.5 }}>
+                  {user?.full_name ?? 'No profile loaded'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {user?.email ?? 'Log in to load account details'}
+                </Typography>
+              </Box>
+
+              <Divider sx={{ my: 1 }} />
+
               <TextField
-                label="New Password"
+                label="Full Name"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                fullWidth
+                variant="outlined"
+              />
+              <TextField
+                label="Email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                fullWidth
+                variant="outlined"
+              />
+              <TextField
+                label="New Password (optional)"
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                helperText="Leave empty to keep the current password"
+                helperText="Leave empty to keep current password"
                 fullWidth
+                variant="outlined"
               />
 
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <Stack direction="row" spacing={2} sx={{ pt: 2 }}>
                 <Button
                   variant="contained"
                   onClick={handleSave}
@@ -182,7 +219,7 @@ export const UserPage = () => {
                   startIcon={<Refresh />}
                   fullWidth
                 >
-                  {isRefreshing ? 'Refreshing...' : 'Refresh Session'}
+                  {isRefreshing ? 'Refreshing...' : 'Refresh'}
                 </Button>
               </Stack>
 
@@ -191,57 +228,10 @@ export const UserPage = () => {
                 color="error"
                 onClick={logout}
                 startIcon={<Logout />}
-                sx={{ alignSelf: 'flex-start' }}
+                fullWidth
               >
                 Logout
               </Button>
-            </Stack>
-          </CardContent>
-        </Card>
-
-        <Card
-          elevation={4}
-          sx={{
-            borderRadius: 4,
-            background: (theme) => `linear-gradient(180deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
-          }}
-        >
-          <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
-              Session Details
-            </Typography>
-            <Stack spacing={2.5}>
-              <Box>
-                <Typography variant="overline" color="text.secondary">
-                  Access Token
-                </Typography>
-                <Typography sx={{ wordBreak: 'break-all' }}>
-                  {accessToken ? `${accessToken.slice(0, 18)}...${accessToken.slice(-10)}` : 'No access token loaded'}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="overline" color="text.secondary">
-                  Refresh Token
-                </Typography>
-                <Typography sx={{ wordBreak: 'break-all' }}>
-                  {refreshToken ? `${refreshToken.slice(0, 18)}...${refreshToken.slice(-10)}` : 'No refresh token stored'}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="overline" color="text.secondary">
-                  Profile
-                </Typography>
-                <Typography>
-                  {user?.full_name ?? 'No profile loaded'}
-                </Typography>
-                <Typography color="text.secondary">
-                  {user?.email ?? 'Log in to load account details'}
-                </Typography>
-              </Box>
-              <Alert severity="info" icon={<Verified />}>
-                The refresh token is stored locally for session persistence, while the access token is
-                used automatically for protected API calls.
-              </Alert>
             </Stack>
           </CardContent>
         </Card>

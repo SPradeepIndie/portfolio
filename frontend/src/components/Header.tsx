@@ -21,7 +21,7 @@ import {
   ListItemText,
   Divider,
 } from '@mui/material'
-import { Menu as MenuIcon, AccountCircle, Logout, Person } from '@mui/icons-material'
+import { Menu as MenuIcon, AccountCircle, Logout, Person, CloudUpload } from '@mui/icons-material'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { ThemeToggle } from './ThemeToggle'
@@ -177,6 +177,11 @@ export const Header: React.FC = () => {
               {navigationItems.map((item) => (
                 <NavigationButton key={item.path} item={item} />
               ))}
+              {isAuthenticated && (
+                <NavigationButton 
+                  item={{ label: 'Posts', path: '/posts' }} 
+                />
+              )}
             </Box>
           )}
 
@@ -282,6 +287,27 @@ export const Header: React.FC = () => {
               {item.label}
             </MenuItem>
           ))}
+          {isAuthenticated && (
+            <MenuItem
+              component={Link}
+              to="/posts"
+              onClick={handleMenuClose}
+              sx={{
+                fontWeight: isActivePath('/posts') ? 600 : 400,
+                color: isActivePath('/posts')
+                  ? theme.palette.secondary.main
+                  : theme.palette.text.primary,
+                minHeight: 48,
+                px: 3,
+                py: 1.5,
+                '&:hover': {
+                  backgroundColor: theme.palette.action.hover,
+                },
+              }}
+            >
+              Posts
+            </MenuItem>
+          )}
         </Menu>
 
         <Menu
@@ -317,6 +343,12 @@ export const Header: React.FC = () => {
             />
           </MenuItem>
           <Divider />
+          <MenuItem component={Link} to="/posts" onClick={handleUserMenuClose}>
+            <ListItemIcon>
+              <CloudUpload fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Manage Posts</ListItemText>
+          </MenuItem>
           <MenuItem component={Link} to="/user" onClick={handleUserMenuClose}>
             <ListItemIcon>
               <Person fontSize="small" />

@@ -10,7 +10,7 @@ import { useThemeMode } from './hooks/useTheme'
 import { lightTheme, darkTheme } from './theme'
 import { Layout } from './components/Layout'
 import { RequireAuth } from './components/RequireAuth'
-import { HomePage, ProjectsPage, BlogsPage, MorePage, LoginPage, RegisterPage, UserPage } from './pages'
+import { HomePage, ProjectsPage, BlogsPage, MorePage, LoginPage, RegisterPage, UserPage, PostManagementPage } from './pages'
 import './App.css'
 
 function App() {
@@ -34,6 +34,14 @@ function App() {
               element={
                 <RequireAuth>
                   <UserPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/posts"
+              element={
+                <RequireAuth>
+                  <PostManagementPage />
                 </RequireAuth>
               }
             />

@@ -9,9 +9,10 @@
     "dev": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "migrate:up": "db-migrate up --env dev",
+    "migrate:up:prod": "db-migrate up --env prod",
     "migrate:down": "db-migrate down --env dev",
     "migrate:reset": "db-migrate reset --env dev",
-    "migrate:status": "db-migrate status --env dev",
+    "migrate:status": "db-migrate check --env dev",
     "migrate:create": "db-migrate create --env dev"
   },
   "keywords": [
@@ -26,6 +27,8 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
+    "db-migrate": "^0.11.14",
+    "db-migrate-pg": "^1.5.2",
     "express": "^5.1.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
@@ -36,8 +39,6 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
-    "db-migrate": "^0.11.14",
-    "db-migrate-pg": "^1.5.2",
     "nodemon": "^3.1.10"
   }
 }

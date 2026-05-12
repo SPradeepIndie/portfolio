@@ -65,6 +65,9 @@ CREATE DATABASE portfolio OWNER portfolio_user;
 # Grant privileges
 GRANT ALL PRIVILEGES ON DATABASE portfolio TO portfolio_user;
 
+# Grant schema access to the portfolio_user
+GRANT USAGE, CREATE ON SCHEMA public TO portfolio_user;
+
 # Exit
 \q
 ```

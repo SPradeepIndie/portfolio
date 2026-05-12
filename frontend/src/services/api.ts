@@ -300,6 +300,68 @@ export const apiService = {
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Failed to update profile'));
     }
+  },
+
+  // Blog management
+  async createBlog(payload: { title: string; excerpt: string; content: string; category: string; tags: string[]; featured?: boolean }): Promise<Blog> {
+    try {
+      const response = await api.post<{ success: boolean; data: Blog }>('/api/blogs', payload);
+      return response.data.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to create blog'));
+    }
+  },
+
+  async updateBlog(id: number, payload: { title: string; excerpt: string; content: string; category: string; tags: string[]; featured?: boolean }): Promise<Blog> {
+    try {
+      const response = await api.put<{ success: boolean; data: Blog }>(`/api/blogs/${id}`, payload);
+      return response.data.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to update blog'));
+    }
+  },
+
+  async deleteBlog(id: number): Promise<void> {
+    try {
+      await api.delete(`/api/blogs/${id}`);
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to delete blog'));
+    }
+  },
+
+  // PDF management
+  async getUploadedPdfs(): Promise<Array<{ id: number; filename: string; file_path: string; file_size: number; uploaded_at: string }>> {
+    try {
+      const response = await api.get<{ success: boolean; data: Array<{ id: number; filename: string; file_path: string; file_size: number; uploaded_at: string }> }>('/api/pdfs');
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to fetch PDFs:', error);
+      throw new Error(getErrorMessage(error, 'Failed to load PDFs'));
+    }
+  },
+
+  async uploadPdf(file: File): Promise<{ id: number; filename: string; file_path: string; file_size: number; uploaded_at: string }> {
+    try {
+      const formData = new FormData();
+      formData.append('pdf', file);
+      
+      const response = await api.post<{ success: boolean; data: { id: number; filename: string; file_path: string; file_size: number; uploaded_at: string } }>('/api/pdfs/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to upload PDF'));
+    }
+  },
+
+  async deletePdf(id: number): Promise<void> {
+    try {
+      await api.delete(`/api/pdfs/${id}`);
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to delete PDF'));
+    }
   }
 };
 
