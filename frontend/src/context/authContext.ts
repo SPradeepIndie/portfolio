@@ -1,7 +1,8 @@
 import { createContext } from 'react'
+import type { AuthUser } from '../services/api'
 
 export interface AuthContextType {
-  user: unknown | null
+  user: AuthUser | null
   accessToken: string | null
   refreshToken: string | null
   isAuthenticated: boolean

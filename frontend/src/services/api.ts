@@ -378,6 +378,23 @@ export const apiService = {
     }
   },
 
+  async uploadPdf(file: File): Promise<{ id: number; filename: string; file_path: string; file_size: number; uploaded_at: string }> {
+    try {
+      const formData = new FormData();
+      formData.append('pdf', file);
+
+      const response = await api.post<{ success: boolean; data: { id: number; filename: string; file_path: string; file_size: number; uploaded_at: string } }>('/api/pdfs/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      return response.data.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to upload PDF'));
+    }
+  },
+
   async deletePdf(id: number): Promise<void> {
     try {
       await api.delete(`/api/pdfs/${id}`);
