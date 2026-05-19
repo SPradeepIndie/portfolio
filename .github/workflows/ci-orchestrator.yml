@@ -17,8 +17,9 @@ on:
     inputs:
       push_to_acr:
         description: 'Build and push frontend/backend images to ACR'
+        type: boolean
         required: false
-        default: 'false'
+        default: false
       tag:
         description: 'Optional image tag to use instead of git sha'
         required: false
