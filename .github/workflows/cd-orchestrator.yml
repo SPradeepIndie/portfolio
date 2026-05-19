@@ -80,7 +80,7 @@ jobs:
             WORKSPACE_ID=${WORKSPACE_ID:-$(az monitor log-analytics workspace show -g "$RG" -n "${RG}-log-workspace" --query id -o tsv)}
             WORKSPACE_NAME=${WORKSPACE_NAME:-$(az monitor log-analytics workspace show -g "$RG" --query name -o tsv --ids "$WORKSPACE_ID")}
             WORKSPACE_KEY=$(az monitor log-analytics workspace get-shared-keys -g "$RG" -n "$WORKSPACE_NAME" --query primarySharedKey -o tsv)
-            az containerapp env create -g "$RG" -n "$ENV_NAME" --logs-workspace-id "$WORKSPACE_ID" --logs-key "$WORKSPACE_KEY" --location "$LOCATION"
+            az containerapp env create -g "$RG" -n "$ENV_NAME" --logs-workspace-id "$WORKSPACE_ID" --logs-workspace-key "$WORKSPACE_KEY" --location "$LOCATION"
           fi
 
       - name: Verify Azure session
