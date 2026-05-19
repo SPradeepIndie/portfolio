@@ -114,6 +114,8 @@ jobs:
       - name: Deploy backend container app
         uses: azure/container-apps-deploy-action@v1
         with:
+          acrUsername: ${{ env.ACR_USERNAME }}
+          acrPassword: ${{ secrets.ACR_PASSWORD }}
           imageToDeploy: ${{ vars.ACR_LOGIN_SERVER }}/portfolio-backend:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event.inputs.tag || github.sha }}
           acrName: ${{ vars.ACR_NAME }}
           containerAppName: backend
@@ -142,6 +144,8 @@ jobs:
       - name: Deploy frontend container app
         uses: azure/container-apps-deploy-action@v1
         with:
+          acrUsername: ${{ env.ACR_USERNAME }}
+          acrPassword: ${{ secrets.ACR_PASSWORD }}
           imageToDeploy: ${{ vars.ACR_LOGIN_SERVER }}/portfolio-frontend:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event.inputs.tag || github.sha }}
           acrName: ${{ vars.ACR_NAME }}
           containerAppName: frontend
