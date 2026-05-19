@@ -64,7 +64,8 @@ jobs:
           else
             echo "Found existing workspace: $WORKSPACE_NAME"
           fi
-          echo "WORKSPACE_ID=$WORKSPACE_ID" >> $GITHUB_ENV
+          WORKSPACE_CUSTOMER_ID=$(az monitor log-analytics workspace show -g "$RG" -n "$WORKSPACE_NAME" --query customerId -o tsv)
+          echo "WORKSPACE_CUSTOMER_ID=$WORKSPACE_CUSTOMER_ID" >> $GITHUB_ENV
           echo "WORKSPACE_NAME=$WORKSPACE_NAME" >> $GITHUB_ENV
 
       - name: Ensure Container Apps environment exists
@@ -77,10 +78,10 @@ jobs:
             echo "Container Apps environment $ENV_NAME already exists"
           else
             echo "Creating Container Apps environment $ENV_NAME with logs workspace"
-            WORKSPACE_ID=${WORKSPACE_ID:-$(az monitor log-analytics workspace show -g "$RG" -n "${RG}-log-workspace" --query id -o tsv)}
-            WORKSPACE_NAME=${WORKSPACE_NAME:-$(az monitor log-analytics workspace show -g "$RG" --query name -o tsv --ids "$WORKSPACE_ID")}
+            WORKSPACE_NAME=${WORKSPACE_NAME:-${RG}-log-workspace}
+            WORKSPACE_CUSTOMER_ID=${WORKSPACE_CUSTOMER_ID:-$(az monitor log-analytics workspace show -g "$RG" -n "$WORKSPACE_NAME" --query customerId -o tsv)}
             WORKSPACE_KEY=$(az monitor log-analytics workspace get-shared-keys -g "$RG" -n "$WORKSPACE_NAME" --query primarySharedKey -o tsv)
-            az containerapp env create -g "$RG" -n "$ENV_NAME" --logs-workspace-id "$WORKSPACE_ID" --logs-workspace-key "$WORKSPACE_KEY" --location "$LOCATION"
+            az containerapp env create -g "$RG" -n "$ENV_NAME" --logs-workspace-id "$WORKSPACE_CUSTOMER_ID" --logs-workspace-key "$WORKSPACE_KEY" --location "$LOCATION"
           fi
 
       - name: Verify Azure session
