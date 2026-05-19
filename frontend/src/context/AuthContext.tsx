@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, useCallback, type ReactNode } from 'react'
 import { apiService, type AuthSession, type AuthUser } from '../services/api'
 import {
   AUTH_EVENTS,
@@ -7,21 +7,7 @@ import {
   readAuthTokens,
   saveAuthTokens,
 } from '../services/authStorage'
-
-interface AuthContextType {
-  user: AuthUser | null
-  accessToken: string | null
-  refreshToken: string | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  login: (email: string, password: string) => Promise<void>
-  register: (fullName: string, email: string, password: string) => Promise<void>
-  logout: () => Promise<void>
-  refreshSession: () => Promise<boolean>
-  updateProfile: (payload: { full_name?: string; email?: string; password?: string }) => Promise<void>
-}
-
-export const AuthContext = createContext<AuthContextType | undefined>(undefined)
+import { AuthContext, type AuthContextType } from './authContext'
 
 interface AuthProviderProps {
   children: ReactNode
@@ -50,12 +36,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setRefreshToken(session.refreshToken)
   }
 
-  const loadCurrentUser = async () => {
+  const loadCurrentUser = useCallback(async () => {
     const currentUser = await apiService.getCurrentUser()
     setUser(currentUser)
-  }
+  }, [])
 
-  const refreshSession = async () => {
+  const refreshSession = useCallback(async () => {
     const storedRefreshToken = getRefreshToken()
     if (!storedRefreshToken) {
       clearAuthTokens()
@@ -77,7 +63,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setRefreshToken(null)
       return false
     }
-  }
+  }, [loadCurrentUser])
 
   useEffect(() => {
     const bootstrapAuth = async () => {
@@ -101,7 +87,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
 
     bootstrapAuth()
-  }, [])
+  }, [refreshSession, loadCurrentUser])
 
   useEffect(() => {
     const handleAuthChange = async () => {
@@ -123,7 +109,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     window.addEventListener(AUTH_EVENTS.change, handleAuthChange)
     return () => window.removeEventListener(AUTH_EVENTS.change, handleAuthChange)
-  }, [])
+  }, [loadCurrentUser])
 
   const login = async (email: string, password: string) => {
     const session = await apiService.login({ email, password })

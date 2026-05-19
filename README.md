@@ -2,6 +2,14 @@
 
 A modern, full-stack portfolio website built with React, TypeScript, Vite frontend and Node.js Express backend.
 
+## Docs
+
+- [Azure Blob Storage integration](docs/BLOB_STORAGE_INTEGRATION.md) - PDF upload flow across backend and frontend
+
+## Blob Storage
+
+PDF uploads now use Azure Blob Storage. The backend issues a short-lived SAS URL, the frontend uploads the file directly, and the blob URL is stored with the blog record when needed. See the linked doc for the current flow.
+
 ## 🚀 Tech Stack
 
 ### Frontend
@@ -99,6 +107,8 @@ npm run dev
 | GET | `/api/portfolio` | Complete portfolio data |
 | GET | `/api/projects` | Projects list |
 | POST | `/api/contact` | Contact form submission |
+| POST | `/api/blogs/upload-url/request` | Request a blob upload URL |
+| POST | `/api/blogs/:id/upload-pdf` | Save a blob URL reference |
 
 
 ## 🔧 Node Version Management

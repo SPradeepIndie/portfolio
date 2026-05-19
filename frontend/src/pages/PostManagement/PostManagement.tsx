@@ -206,19 +206,9 @@ export const PostManagementPage = () => {
       setMessage(null)
       setError(null)
 
-      // Step 1: Request upload URL from backend
-      const { uploadUrl, blobName } = await apiService.requestPdfUploadUrl(pdfFile.name)
-
-      // Step 2: Upload PDF directly to Azure Blob Storage
-      await apiService.uploadPdfToBlob(uploadUrl, pdfFile)
-
-      // Step 3: Construct the blob URL and save reference in backend
-      // The uploadUrl contains the blob URL + SAS token, so we extract the base URL
-      const blobUrl = uploadUrl.split('?')[0]
-      // Optional: Save the reference in backend for tracking
-      // await apiService.savePdfReference(blogId, blobUrl)
-
-      setMessage('PDF uploaded successfully to blob storage')
+      // Upload PDF via backend endpoint (simpler & server-managed)
+      await apiService.uploadPdf(pdfFile)
+      setMessage('PDF uploaded successfully')
       setPdfFile(null)
       await loadData()
     } catch (err) {

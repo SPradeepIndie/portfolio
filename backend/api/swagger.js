@@ -56,7 +56,7 @@ const swaggerDocument = {
         properties: {
           id: { type: 'integer', example: 1 },
           full_name: { type: 'string', example: 'Admin User' },
-          email: { type: 'string', format: 'email', example: 'admin@example.com' },
+          email: { type: 'string', format: 'email', example: 'sa@gmail.com' },
           role: { type: 'string', example: 'admin' },
           is_active: { type: 'boolean', example: true },
           created_at: { type: 'string', format: 'date-time' },
@@ -72,6 +72,26 @@ const swaggerDocument = {
           original_name: { type: 'string', example: 'spec.pdf' },
           file_path: { type: 'string', example: '/uploads/pdfs/spec-123.pdf' },
           uploaded_by: { type: 'integer', example: 1 },
+          created_at: { type: 'string', format: 'date-time' },
+        },
+      },
+      UploadUrlResponse: {
+        type: 'object',
+        properties: {
+          uploadUrl: { type: 'string', format: 'uri' },
+          blobName: { type: 'string' },
+          expiresIn: { type: 'integer', example: 3600 },
+        },
+      },
+      Blog: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer' },
+          title: { type: 'string' },
+          excerpt: { type: 'string' },
+          content: { type: 'string' },
+          author: { type: 'string' },
+          pdf_path: { type: 'string', nullable: true },
           created_at: { type: 'string', format: 'date-time' },
         },
       },
@@ -431,6 +451,88 @@ const swaggerDocument = {
             description: 'PDF not found',
           },
         },
+      },
+    },
+    '/api/blogs/upload-url/request': {
+      post: {
+        tags: ['Blogs'],
+        summary: 'Request a SAS upload URL for a PDF (private)',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['filename'],
+                properties: {
+                  filename: { type: 'string', example: 'specs.pdf' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'SAS upload URL generated',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/UploadUrlResponse' },
+              },
+            },
+          },
+          401: { description: 'Unauthorized' },
+        },
+      },
+    },
+    '/api/blogs/{id}/upload-pdf': {
+      post: {
+        tags: ['Blogs'],
+        summary: 'Save uploaded PDF reference for a blog (private)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { in: 'path', name: 'id', required: true, schema: { type: 'integer' } },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['pdf_url'],
+                properties: { pdf_url: { type: 'string', format: 'uri' } },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'PDF reference saved',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Blog' } } },
+          },
+          400: { description: 'Bad request' },
+          401: { description: 'Unauthorized' },
+        },
+      },
+    },
+    '/api/pdfs': {
+      get: {
+        tags: ['PDFs'],
+        summary: 'List uploaded PDFs',
+        responses: {
+          200: {
+            description: 'List of PDFs',
+          },
+        },
+      },
+    },
+    '/api/pdfs/{id}': {
+      delete: {
+        tags: ['PDFs'],
+        summary: 'Delete a PDF record and blob',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'integer' } }],
+        responses: { 200: { description: 'Deleted' }, 404: { description: 'Not found' } },
       },
     },
   },
