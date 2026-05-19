@@ -11,17 +11,20 @@ on:
   workflow_dispatch:
     inputs:
       run_migrations:
+        type: boolean
         description: 'Run database migrations'
         required: false
-        default: 'false'
+        default: false
       deploy_backend:
         description: 'Deploy backend container app'
+        type: boolean
         required: false
-        default: 'false'
+        default: false
       deploy_frontend:
         description: 'Deploy frontend container app'
+        type: boolean
         required: false
-        default: 'false'
+        default: false
       tag:
         description: 'Image tag to use when pushing/deploying (optional, defaults to github.sha)'
         required: false

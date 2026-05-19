@@ -4,9 +4,15 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
   push:
     branches:
       - main
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
   workflow_dispatch:
     inputs:
       push_to_acr:
