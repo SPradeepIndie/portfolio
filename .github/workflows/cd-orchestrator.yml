@@ -42,6 +42,44 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Register required Azure resource providers
+        run: |
+          az provider register -n Microsoft.App --wait
+          az provider register -n Microsoft.OperationalInsights --wait
+
+      - name: Ensure Log Analytics workspace exists
+        id: ensure-workspace
+        run: |
+          set -e
+          RG=${{ vars.AZURE_RESOURCE_GROUP }}
+          WORKSPACE_NAME="${{ vars.AZURE_LOG_WORKSPACE_NAME }}"
+          if [ -z "$WORKSPACE_NAME" ]; then
+            WORKSPACE_NAME="${RG}-log-workspace"
+          fi
+          LOCATION=$(az group show -n "$RG" --query location -o tsv)
+          WORKSPACE_ID=$(az monitor log-analytics workspace show -g "$RG" -n "$WORKSPACE_NAME" --query id -o tsv 2>/dev/null || true)
+          if [ -z "$WORKSPACE_ID" ]; then
+            echo "Creating Log Analytics workspace: $WORKSPACE_NAME in $RG ($LOCATION)"
+            WORKSPACE_ID=$(az monitor log-analytics workspace create -g "$RG" -n "$WORKSPACE_NAME" --location "$LOCATION" --query id -o tsv)
+          else
+            echo "Found existing workspace: $WORKSPACE_NAME"
+          fi
+          echo "WORKSPACE_ID=$WORKSPACE_ID" >> $GITHUB_ENV
+
+      - name: Ensure Container Apps environment exists
+        run: |
+          set -e
+          RG=${{ vars.AZURE_RESOURCE_GROUP }}
+          ENV_NAME=${{ vars.AZURE_CONTAINER_APPS_ENVIRONMENT }}
+          LOCATION=$(az group show -n "$RG" --query location -o tsv)
+          if az containerapp env show -g "$RG" -n "$ENV_NAME" >/dev/null 2>&1; then
+            echo "Container Apps environment $ENV_NAME already exists"
+          else
+            echo "Creating Container Apps environment $ENV_NAME with logs workspace"
+            WORKSPACE_ID=${WORKSPACE_ID:-$(az monitor log-analytics workspace show -g "$RG" -n "${RG}-log-workspace" --query id -o tsv)}
+            az containerapp env create -g "$RG" -n "$ENV_NAME" --logs-workspace-id "$WORKSPACE_ID" --location "$LOCATION"
+          fi
+
       - name: Verify Azure session
         run: az account show
 
@@ -66,6 +104,44 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Register required Azure resource providers
+        run: |
+          az provider register -n Microsoft.App --wait
+          az provider register -n Microsoft.OperationalInsights --wait
+
+      - name: Ensure Log Analytics workspace exists
+        id: ensure-workspace-frontend
+        run: |
+          set -e
+          RG=${{ vars.AZURE_RESOURCE_GROUP }}
+          WORKSPACE_NAME="${{ vars.AZURE_LOG_WORKSPACE_NAME }}"
+          if [ -z "$WORKSPACE_NAME" ]; then
+            WORKSPACE_NAME="${RG}-log-workspace"
+          fi
+          LOCATION=$(az group show -n "$RG" --query location -o tsv)
+          WORKSPACE_ID=$(az monitor log-analytics workspace show -g "$RG" -n "$WORKSPACE_NAME" --query id -o tsv 2>/dev/null || true)
+          if [ -z "$WORKSPACE_ID" ]; then
+            echo "Creating Log Analytics workspace: $WORKSPACE_NAME in $RG ($LOCATION)"
+            WORKSPACE_ID=$(az monitor log-analytics workspace create -g "$RG" -n "$WORKSPACE_NAME" --location "$LOCATION" --query id -o tsv)
+          else
+            echo "Found existing workspace: $WORKSPACE_NAME"
+          fi
+          echo "WORKSPACE_ID=$WORKSPACE_ID" >> $GITHUB_ENV
+
+      - name: Ensure Container Apps environment exists
+        run: |
+          set -e
+          RG=${{ vars.AZURE_RESOURCE_GROUP }}
+          ENV_NAME=${{ vars.AZURE_CONTAINER_APPS_ENVIRONMENT }}
+          LOCATION=$(az group show -n "$RG" --query location -o tsv)
+          if az containerapp env show -g "$RG" -n "$ENV_NAME" >/dev/null 2>&1; then
+            echo "Container Apps environment $ENV_NAME already exists"
+          else
+            echo "Creating Container Apps environment $ENV_NAME with logs workspace"
+            WORKSPACE_ID=${WORKSPACE_ID:-$(az monitor log-analytics workspace show -g "$RG" -n "${RG}-log-workspace" --query id -o tsv)}
+            az containerapp env create -g "$RG" -n "$ENV_NAME" --logs-workspace-id "$WORKSPACE_ID" --location "$LOCATION"
+          fi
+
       - name: Deploy backend container app
         uses: azure/container-apps-deploy-action@v1
         with:
@@ -81,6 +157,8 @@ jobs:
   deploy-frontend:
     name: Deploy frontend container app
     if: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_frontend == 'true') }}
+    needs: 
+      - validate-azure-credentials
     runs-on: ubuntu-latest
 
     steps:
