@@ -303,7 +303,7 @@ export const apiService = {
   },
 
   // Blog management
-  async createBlog(payload: { title: string; excerpt: string; content: string; category: string; tags: string[]; featured?: boolean }): Promise<Blog> {
+  async createBlog(payload: { title: string; excerpt: string; content: string; category: string; tags: string[]; featured?: boolean; pdf_url?: string }): Promise<Blog> {
     try {
       const response = await api.post<{ success: boolean; data: Blog }>('/api/blogs', payload);
       return response.data.data;
@@ -312,7 +312,7 @@ export const apiService = {
     }
   },
 
-  async updateBlog(id: number, payload: { title: string; excerpt: string; content: string; category: string; tags: string[]; featured?: boolean }): Promise<Blog> {
+  async updateBlog(id: number, payload: { title: string; excerpt: string; content: string; category: string; tags: string[]; featured?: boolean; pdf_url?: string }): Promise<Blog> {
     try {
       const response = await api.put<{ success: boolean; data: Blog }>(`/api/blogs/${id}`, payload);
       return response.data.data;
@@ -329,7 +329,45 @@ export const apiService = {
     }
   },
 
-  // PDF management
+  // Azure Blob Storage PDF upload flow
+  async requestPdfUploadUrl(filename: string): Promise<{ uploadUrl: string; blobName: string; expiresIn: number }> {
+    try {
+      const response = await api.post<{ success: boolean; data: { uploadUrl: string; blobName: string; expiresIn: number } }>('/api/blogs/upload-url/request', { filename });
+      return response.data.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to request upload URL'));
+    }
+  },
+
+  async uploadPdfToBlob(uploadUrl: string, file: File): Promise<void> {
+    try {
+      // Upload directly to Azure Blob Storage using the SAS URL
+      const response = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'x-ms-blob-type': 'BlockBlob',
+          'Content-Type': file.type,
+        },
+        body: file,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.statusText}`);
+      }
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to upload PDF to storage'));
+    }
+  },
+
+  async savePdfReference(blogId: number, pdf_url: string): Promise<Blog> {
+    try {
+      const response = await api.post<{ success: boolean; data: Blog }>(`/api/blogs/${blogId}/upload-pdf`, { pdf_url });
+      return response.data.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to save PDF reference'));
+    }
+  },
+
   async getUploadedPdfs(): Promise<Array<{ id: number; filename: string; file_path: string; file_size: number; uploaded_at: string }>> {
     try {
       const response = await api.get<{ success: boolean; data: Array<{ id: number; filename: string; file_path: string; file_size: number; uploaded_at: string }> }>('/api/pdfs');
@@ -340,29 +378,13 @@ export const apiService = {
     }
   },
 
-  async uploadPdf(file: File): Promise<{ id: number; filename: string; file_path: string; file_size: number; uploaded_at: string }> {
-    try {
-      const formData = new FormData();
-      formData.append('pdf', file);
-      
-      const response = await api.post<{ success: boolean; data: { id: number; filename: string; file_path: string; file_size: number; uploaded_at: string } }>('/api/pdfs/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      return response.data.data;
-    } catch (error) {
-      throw new Error(getErrorMessage(error, 'Failed to upload PDF'));
-    }
-  },
-
   async deletePdf(id: number): Promise<void> {
     try {
       await api.delete(`/api/pdfs/${id}`);
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Failed to delete PDF'));
     }
-  }
+  },
 };
 
 export default api;

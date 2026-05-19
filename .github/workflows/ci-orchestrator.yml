@@ -1,0 +1,33 @@
+name: CI Orchestrator
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  backend:
+    name: Backend pipeline
+    uses: ./.github/workflows/backend.yml
+    with:
+      push_image: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      image_tag: ${{ github.sha }}
+      acr_name: ${{ vars.ACR_NAME }}
+      acr_login_server: ${{ vars.ACR_LOGIN_SERVER }}
+      image_repository: portfolio-backend
+    secrets: inherit
+
+  frontend:
+    name: Frontend pipeline
+    uses: ./.github/workflows/frontend.yml
+    with:
+      push_image: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      image_tag: ${{ github.sha }}
+      acr_name: ${{ vars.ACR_NAME }}
+      acr_login_server: ${{ vars.ACR_LOGIN_SERVER }}
+      image_repository: portfolio-frontend
+    secrets: inherit

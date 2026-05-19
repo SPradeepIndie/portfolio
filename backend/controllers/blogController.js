@@ -6,7 +6,6 @@
 
 import express from 'express';
 import * as blogService from '../services/blogService.js';
-import { upload, handleUploadError } from '../middleware/upload.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -18,9 +17,11 @@ router.get('/tag/:tag', blogService.getBlogsByTag);
 router.get('/:id', blogService.getBlogById);
 router.post('/:id/like', blogService.likeBlog);
 
-router.post('/', authenticateToken, upload.single('pdf'), handleUploadError, blogService.createBlog);
-router.put('/:id', authenticateToken, upload.single('pdf'), handleUploadError, blogService.updateBlog);
-router.post('/:id/upload-pdf', authenticateToken, upload.single('pdf'), handleUploadError, blogService.uploadBlogPdf);
+// PDF upload endpoints - now using Azure Blob Storage
+router.post('/upload-url/request', authenticateToken, blogService.getUploadUrl);
+router.post('/', authenticateToken, blogService.createBlog);
+router.put('/:id', authenticateToken, blogService.updateBlog);
+router.post('/:id/upload-pdf', authenticateToken, blogService.uploadBlogPdf);
 router.delete('/:id', authenticateToken, blogService.deleteBlog);
 
 export default router;

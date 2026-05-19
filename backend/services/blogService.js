@@ -6,6 +6,35 @@
 
 import { blogModel } from '../models/blogModel.js';
 import { asyncHandler, AppError } from '../middleware/errorHandler.js';
+import * as blobService from './blobService.js';
+
+/**
+ * @desc    Get upload URL for PDF from Azure Blob Storage
+ * @route   POST /api/blogs/upload-url/request
+ * @access  Private
+ */
+export const getUploadUrl = asyncHandler(async (req, res) => {
+  const { filename } = req.body;
+
+  if (!filename) {
+    throw new AppError('Filename is required', 400);
+  }
+
+  // Generate unique blob name
+  const blobName = blobService.generateBlobName(filename);
+
+  // Generate SAS URL for uploading (valid for 1 hour)
+  const uploadUrl = await blobService.generateUploadUrl(blobName, 1);
+
+  res.json({
+    success: true,
+    data: {
+      uploadUrl,
+      blobName,
+      expiresIn: 3600, // 1 hour in seconds
+    },
+  });
+});
 
 /**
  * @desc    Get all blogs
@@ -94,24 +123,24 @@ export const getBlogsByTag = asyncHandler(async (req, res) => {
  * @access  Private (manual via Postman)
  */
 export const createBlog = asyncHandler(async (req, res) => {
-  const { title, excerpt, content, author } = req.body;
-  
+  const { title, excerpt, content, author, pdf_url } = req.body;
+
   if (!title || !excerpt || !content || !author) {
     throw new AppError('Title, excerpt, content, and author are required', 400);
   }
-  
+
   const blogData = {
     ...req.body,
     tags: Array.isArray(req.body.tags) ? req.body.tags : JSON.parse(req.body.tags || '[]'),
     featured: req.body.featured === 'true' || req.body.featured === true,
-    pdf_path: req.file ? `/uploads/blogs/${req.file.filename}` : null
+    pdf_path: pdf_url || null, // Store the blob URL
   };
-  
+
   const blog = await blogModel.create(blogData);
-  
+
   res.status(201).json({
     success: true,
-    data: blog
+    data: blog,
   });
 });
 
@@ -126,45 +155,46 @@ export const updateBlog = asyncHandler(async (req, res) => {
     tags: Array.isArray(req.body.tags) ? req.body.tags : JSON.parse(req.body.tags || '[]'),
     featured: req.body.featured === 'true' || req.body.featured === true,
   };
-  
-  // If new PDF uploaded, update path
-  if (req.file) {
-    blogData.pdf_path = `/uploads/blogs/${req.file.filename}`;
+
+  // If new PDF URL provided, update path
+  if (req.body.pdf_url) {
+    blogData.pdf_path = req.body.pdf_url;
   }
-  
+
   const blog = await blogModel.update(req.params.id, blogData);
-  
+
   if (!blog) {
     throw new AppError('Blog not found', 404);
   }
-  
+
   res.json({
     success: true,
-    data: blog
+    data: blog,
   });
 });
 
 /**
- * @desc    Upload PDF to existing blog
+ * @desc    Upload PDF reference for existing blog
  * @route   POST /api/blogs/:id/upload-pdf
- * @access  Private (manual via Postman)
+ * @access  Private
  */
 export const uploadBlogPdf = asyncHandler(async (req, res) => {
-  if (!req.file) {
-    throw new AppError('No PDF file provided', 400);
+  const { pdf_url } = req.body;
+
+  if (!pdf_url) {
+    throw new AppError('PDF URL is required', 400);
   }
-  
-  const pdf_path = `/uploads/blogs/${req.file.filename}`;
-  const blog = await blogModel.updatePdfPath(req.params.id, pdf_path);
-  
+
+  const blog = await blogModel.updatePdfPath(req.params.id, pdf_url);
+
   if (!blog) {
     throw new AppError('Blog not found', 404);
   }
-  
+
   res.json({
     success: true,
     data: blog,
-    message: 'PDF uploaded successfully'
+    message: 'PDF reference saved successfully',
   });
 });
 

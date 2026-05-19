@@ -1,0 +1,82 @@
+name: CD Orchestrator
+
+on:
+  workflow_run:
+    workflows:
+      - CI Orchestrator
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  validate-azure-credentials:
+    name: Validate Azure credentials
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Log in to Azure
+        uses: azure/login@v3
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Verify Azure session
+        run: az account show
+
+  migrations:
+    name: Run database migrations
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    needs:
+      - validate-azure-credentials
+    uses: ./.github/workflows/migration.yml
+    secrets: inherit
+
+  deploy-backend:
+    name: Deploy backend container app
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    needs:
+      - migrations
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Log in to Azure
+        uses: azure/login@v3
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy backend container app
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          imageToDeploy: ${{ vars.ACR_LOGIN_SERVER }}/portfolio-backend:${{ github.event.workflow_run.head_sha }}
+          acrName: ${{ vars.ACR_NAME }}
+          containerAppName: backend
+          resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
+          containerAppEnvironment: ${{ vars.AZURE_CONTAINER_APPS_ENVIRONMENT }}
+          ingress: internal
+          targetPort: 5000
+          environmentVariables: NODE_ENV=production
+
+  deploy-frontend:
+    name: Deploy frontend container app
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    needs:
+      - migrations
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Log in to Azure
+        uses: azure/login@v3
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy frontend container app
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          imageToDeploy: ${{ vars.ACR_LOGIN_SERVER }}/portfolio-frontend:${{ github.event.workflow_run.head_sha }}
+          acrName: ${{ vars.ACR_NAME }}
+          containerAppName: frontend
+          resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
+          containerAppEnvironment: ${{ vars.AZURE_CONTAINER_APPS_ENVIRONMENT }}
+          ingress: external
+          targetPort: 80
