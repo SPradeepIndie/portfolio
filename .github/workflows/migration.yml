@@ -29,34 +29,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check DB_PORT and env
+      - name: Substitute environment variables in database.json
         env:
           DB_HOST: ${{ vars.DB_HOST }}
           DB_PORT: ${{ vars.DB_PORT }}
           DB_NAME: ${{ vars.DB_NAME }}
           DB_USER: ${{ vars.DB_USER }}
-        run: |
-          set -euo pipefail
-          echo "DB_HOST=${DB_HOST:-<not set>}"
-          echo "DB_NAME=${DB_NAME:-<not set>}"
-          echo "DB_USER=${DB_USER:-<not set>}"
-          # Show raw bytes and length to detect hidden characters
-          printf 'DB_PORT raw: '%s'\n' "${DB_PORT:-<not set>}"
-          printf 'DB_PORT length: %d\n' "${#DB_PORT}"
-          # Show hex of DB_PORT to reveal non-digit characters
-          if [ -n "${DB_PORT:-}" ]; then
-            echo -n "DB_PORT hex: "
-            printf '%s' "$DB_PORT" | xxd -p | tr -d '\n' || true
-            echo
-          fi
-          if [ -z "${DB_PORT:-}" ]; then
-            echo "DB_PORT is empty" >&2
-            exit 1
-          fi
-          if ! printf '%s' "$DB_PORT" | grep -Eq '^[0-9]+$'; then
-            echo "DB_PORT must be numeric. Current value:'$DB_PORT'" >&2
-            exit 1
-          fi
+        run: node substitute-env.js
 
       - name: Run production migrations
         env:

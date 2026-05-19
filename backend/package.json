@@ -14,7 +14,8 @@
     "migrate:down": "db-migrate down --env dev",
     "migrate:reset": "db-migrate reset --env dev",
     "migrate:status": "db-migrate check --env dev",
-    "migrate:create": "db-migrate create --env dev"
+    "migrate:create": "db-migrate create --env dev",
+    "substitute:env": "node substitute-env.js"
   },
   "keywords": [
     "portfolio",
