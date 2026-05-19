@@ -8,14 +8,23 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      push_to_acr:
+        description: 'Build and push frontend/backend images to ACR'
+        required: false
+        default: 'false'
+      tag:
+        description: 'Optional image tag to use instead of git sha'
+        required: false
+        default: ''
 
 jobs:
   backend:
     name: Backend pipeline
     uses: ./.github/workflows/backend.yml
     with:
-      push_image: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-      image_tag: ${{ github.sha }}
+      push_image: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.event.inputs.push_to_acr == 'true') }}
+      image_tag: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '' && github.event.inputs.tag || github.sha }}
       acr_name: ${{ vars.ACR_NAME }}
       acr_login_server: ${{ vars.ACR_LOGIN_SERVER }}
       image_repository: portfolio-backend
@@ -25,8 +34,8 @@ jobs:
     name: Frontend pipeline
     uses: ./.github/workflows/frontend.yml
     with:
-      push_image: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-      image_tag: ${{ github.sha }}
+      push_image: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.event.inputs.push_to_acr == 'true') }}
+      image_tag: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '' && github.event.inputs.tag || github.sha }}
       acr_name: ${{ vars.ACR_NAME }}
       acr_login_server: ${{ vars.ACR_LOGIN_SERVER }}
       image_repository: portfolio-frontend
