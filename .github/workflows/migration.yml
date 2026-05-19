@@ -35,6 +35,7 @@ jobs:
           DB_PORT: ${{ vars.DB_PORT }}
           DB_NAME: ${{ vars.DB_NAME }}
           DB_USER: ${{ vars.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: node substitute-env.js
 
       - name: Run production migrations
