@@ -7,8 +7,14 @@ properties:
       transport: auto
       targetPort: 5000
     secrets:
+      - name: acr-password-secret
+        value: ${ACR_PASSWORD}
       - name: db-password-secret
         value: ${DB_PASSWORD}
+    registries:
+      - server: ${ACR_LOGIN_SERVER}
+        username: ${ACR_USERNAME}
+        passwordSecretRef: acr-password-secret
   template:
     containers:
       - name: backend

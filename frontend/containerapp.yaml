@@ -6,6 +6,13 @@ properties:
       allowInsecure: false
       transport: auto
       targetPort: 80
+    secrets:
+      - name: acr-password-secret
+        value: ${ACR_PASSWORD} 
+    registries:
+      - server: ${ACR_LOGIN_SERVER}
+        username: ${ACR_USERNAME}
+        passwordSecretRef: acr-password-secret
   template:
     containers:
       - name: frontend
