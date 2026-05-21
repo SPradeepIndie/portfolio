@@ -123,10 +123,10 @@ jobs:
           mkdir -p "$RUNNER_TEMP/container-apps"
           export CONTAINER_APP_ENVIRONMENT_ID="$CONTAINER_APP_ENVIRONMENT_ID"
           export REGISTRY_IMAGE="${{ vars.ACR_LOGIN_SERVER }}/portfolio-backend:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event.inputs.tag || github.sha }}"
-          export DB_HOST="${{ secrets.DB_HOST }}"
-          export DB_PORT="${{ secrets.DB_PORT }}"
-          export DB_NAME="${{ secrets.DB_NAME }}"
-          export DB_USER="${{ secrets.DB_USER }}"
+          export DB_HOST="${{ vars.DB_HOST }}"
+          export DB_PORT="${{ vars.DB_PORT }}"
+          export DB_NAME="${{ vars.DB_NAME }}"
+          export DB_USER="${{ vars.DB_USER }}"
           export DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
           envsubst < backend/containerapp.yaml > "$RUNNER_TEMP/container-apps/backend.yaml"
 
@@ -175,7 +175,6 @@ jobs:
           export CONTAINER_APP_ENVIRONMENT_ID="$CONTAINER_APP_ENVIRONMENT_ID"
           export REGISTRY_IMAGE="${{ vars.ACR_LOGIN_SERVER }}/portfolio-frontend:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event.inputs.tag || github.sha }}"
           export BACKEND_URL="${{ needs.deploy-backend.outputs.backend_fqdn }}"
-          export DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
           envsubst < frontend/containerapp.yaml > "$RUNNER_TEMP/container-apps/frontend.yaml"
 
       - name: Deploy frontend container app
