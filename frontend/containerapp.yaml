@@ -1,0 +1,26 @@
+properties:
+  managedEnvironmentId: ${CONTAINER_APP_ENVIRONMENT_ID}
+  configuration:
+    ingress:
+      external: true
+      allowInsecure: false
+      transport: auto
+      targetPort: 80
+  template:
+    containers:
+      - name: frontend
+        image: ${REGISTRY_IMAGE}
+        resources:
+          cpu: 0.5
+          memory: 1.0Gi
+        env:
+          - name: PORTFOLIO_BACKEND_URL
+            value: ${BACKEND_URL}
+    scale:
+      minReplicas: 1
+      maxReplicas: 2
+      rules:
+        - name: http-requests
+          http:
+            metadata:
+              concurrentRequests: '100'

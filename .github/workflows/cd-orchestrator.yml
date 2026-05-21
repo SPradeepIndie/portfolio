@@ -101,12 +101,31 @@ jobs:
     needs:
       - migrations
     runs-on: ubuntu-latest
+    outputs:
+      backend_fqdn: ${{ steps.get-backend-fqdn.outputs.backend_fqdn }}
 
     steps:
       - name: Log in to Azure
         uses: azure/login@v3
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Resolve backend environment id
+        run: |
+          echo "CONTAINER_APP_ENVIRONMENT_ID=$(az containerapp env show -g '${{ vars.AZURE_RESOURCE_GROUP }}' -n '${{ vars.AZURE_CONTAINER_APPS_ENVIRONMENT }}' --query id -o tsv)" >> "$GITHUB_ENV"
+
+      - name: Render backend container app YAML
+        env:
+          CONTAINER_APP_ENVIRONMENT_ID: ${{ env.CONTAINER_APP_ENVIRONMENT_ID }}
+          REGISTRY_IMAGE: ${{ vars.ACR_LOGIN_SERVER }}/portfolio-backend:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event.inputs.tag || github.sha }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/container-apps"
+          node scripts/render-template.mjs backend/containerapp.yaml "$RUNNER_TEMP/container-apps/backend.yaml"
 
       - name: Deploy backend container app
         uses: azure/container-apps-deploy-action@v1
@@ -117,15 +136,20 @@ jobs:
           containerAppName: backend
           resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
           containerAppEnvironment: ${{ vars.AZURE_CONTAINER_APPS_ENVIRONMENT }}
-          ingress: internal
-          targetPort: 5000
-          environmentVariables: NODE_ENV=production
+          yamlConfigPath: ${{ runner.temp }}/container-apps/backend.yaml
+
+      - name: Get backend FQDN
+        id: get-backend-fqdn
+        run: |
+          RG=${{ vars.AZURE_RESOURCE_GROUP }}
+          BACKEND_FQDN=$(az containerapp show -g "$RG" -n backend --query properties.configuration.ingress.fqdn -o tsv)
+          echo "backend_fqdn=$BACKEND_FQDN" >> $GITHUB_OUTPUT
 
   deploy-frontend:
     name: Deploy frontend container app
     if: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_frontend == 'true') }}
-    needs: 
-      - validate-azure-credentials
+    needs:
+      - deploy-backend
     runs-on: ubuntu-latest
 
     steps:
@@ -134,15 +158,27 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Resolve frontend environment id
+        run: |
+          echo "CONTAINER_APP_ENVIRONMENT_ID=$(az containerapp env show -g '${{ vars.AZURE_RESOURCE_GROUP }}' -n '${{ vars.AZURE_CONTAINER_APPS_ENVIRONMENT }}' --query id -o tsv)" >> "$GITHUB_ENV"
+
+      - name: Render frontend container app YAML
+        env:
+          CONTAINER_APP_ENVIRONMENT_ID: ${{ env.CONTAINER_APP_ENVIRONMENT_ID }}
+          REGISTRY_IMAGE: ${{ vars.ACR_LOGIN_SERVER }}/portfolio-frontend:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event.inputs.tag || github.sha }}
+          BACKEND_URL: ${{ needs.deploy-backend.outputs.backend_fqdn }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/container-apps"
+          node scripts/render-template.mjs frontend/containerapp.yaml "$RUNNER_TEMP/container-apps/frontend.yaml"
+
       - name: Deploy frontend container app
         uses: azure/container-apps-deploy-action@v1
         with:
           acrUsername: ${{ vars.ACR_USERNAME }}
           acrPassword: ${{ secrets.ACR_PASSWORD }}
           imageToDeploy: ${{ vars.ACR_LOGIN_SERVER }}/portfolio-frontend:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event.inputs.tag || github.sha }}
-          acrName: ${{ vars.ACR_NAME }}
           containerAppName: frontend
           resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
           containerAppEnvironment: ${{ vars.AZURE_CONTAINER_APPS_ENVIRONMENT }}
-          ingress: external
-          targetPort: 80
+          yamlConfigPath: ${{ runner.temp }}/container-apps/frontend.yaml
+

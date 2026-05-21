@@ -1,0 +1,37 @@
+properties:
+  managedEnvironmentId: ${CONTAINER_APP_ENVIRONMENT_ID}
+  configuration:
+    ingress:
+      external: true
+      allowInsecure: false
+      transport: auto
+      targetPort: 5000
+    secrets:
+      - name: db-password-secret
+        value: ${DB_PASSWORD}
+  template:
+    containers:
+      - name: backend
+        image: ${REGISTRY_IMAGE}
+        resources:
+          cpu: 0.5
+          memory: 1.0Gi
+        env:
+          - name: DB_HOST
+            value: ${DB_HOST}
+          - name: DB_PORT
+            value: ${DB_PORT}
+          - name: DB_NAME
+            value: ${DB_NAME}
+          - name: DB_USER
+            value: ${DB_USER}
+          - name: DB_PASSWORD
+            secretRef: db-password-secret
+    scale:
+      minReplicas: 1
+      maxReplicas: 2
+      rules:
+        - name: http-requests
+          http:
+            metadata:
+              concurrentRequests: '100'
