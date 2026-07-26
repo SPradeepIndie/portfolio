@@ -114,6 +114,7 @@ export interface Project {
   featured: boolean;
   createdAt: string;
   status: 'Completed' | 'In Progress' | 'Planning';
+  timeline?: string;
 }
 
 export interface Blog {
@@ -130,6 +131,8 @@ export interface Blog {
   category: string;
   views: number;
   likes: number;
+  pdf_path?: string;
+  pdf_url?: string;
 }
 
 export interface ApiResponse<T> {
@@ -203,6 +206,32 @@ export const apiService = {
     } catch (error) {
       console.error(`Failed to fetch project ${id}:`, error);
       throw new Error(getErrorMessage(error, 'Failed to load project'));
+    }
+  },
+
+  async createProject(payload: Partial<Project>): Promise<Project> {
+    try {
+      const response = await api.post<{ success: boolean; data: Project }>('/api/projects', payload);
+      return response.data.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to create project'));
+    }
+  },
+
+  async updateProject(id: number, payload: Partial<Project>): Promise<Project> {
+    try {
+      const response = await api.put<{ success: boolean; data: Project }>(`/api/projects/${id}`, payload);
+      return response.data.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to update project'));
+    }
+  },
+
+  async deleteProject(id: number): Promise<void> {
+    try {
+      await api.delete(`/api/projects/${id}`);
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to delete project'));
     }
   },
 
@@ -303,7 +332,7 @@ export const apiService = {
   },
 
   // Blog management
-  async createBlog(payload: { title: string; excerpt: string; content: string; category: string; tags: string[]; featured?: boolean; pdf_url?: string }): Promise<Blog> {
+  async createBlog(payload: { title: string; excerpt: string; content: string; author: string; category: string; tags: string[]; featured?: boolean; pdf_url?: string }): Promise<Blog> {
     try {
       const response = await api.post<{ success: boolean; data: Blog }>('/api/blogs', payload);
       return response.data.data;
@@ -312,7 +341,7 @@ export const apiService = {
     }
   },
 
-  async updateBlog(id: number, payload: { title: string; excerpt: string; content: string; category: string; tags: string[]; featured?: boolean; pdf_url?: string }): Promise<Blog> {
+  async updateBlog(id: number, payload: { title: string; excerpt: string; content: string; author: string; category: string; tags: string[]; featured?: boolean; pdf_url?: string }): Promise<Blog> {
     try {
       const response = await api.put<{ success: boolean; data: Blog }>(`/api/blogs/${id}`, payload);
       return response.data.data;
@@ -380,13 +409,17 @@ export const apiService = {
 
   async uploadPdf(file: File): Promise<{ id: number; filename: string; file_path: string; file_size: number; uploaded_at: string }> {
     try {
-      const formData = new FormData();
-      formData.append('pdf', file);
+      const { uploadUrl } = await this.requestPdfUploadUrl(file.name);
+      
+      await this.uploadPdfToBlob(uploadUrl, file);
 
-      const response = await api.post<{ success: boolean; data: { id: number; filename: string; file_path: string; file_size: number; uploaded_at: string } }>('/api/pdfs/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      const directUrl = uploadUrl.split('?')[0];
+
+      const response = await api.post<{ success: boolean; data: { id: number; filename: string; file_path: string; file_size: number; uploaded_at: string } }>('/api/pdfs/upload', {
+        title: file.name,
+        original_name: file.name,
+        file_path: directUrl,
+        file_size: file.size,
       });
 
       return response.data.data;

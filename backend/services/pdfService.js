@@ -14,16 +14,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export const uploadPdf = asyncHandler(async (req, res) => {
-  if (!req.file) {
-    throw new AppError('No PDF file provided', 400);
+  const { title, original_name, file_path, file_size } = req.body;
+
+  if (!file_path) {
+    throw new AppError('File path (PDF URL) is required', 400);
   }
 
-  const title = req.body.title || req.file.originalname;
-  const file_path = `/uploads/pdfs/${req.file.filename}`;
-
   const record = await pdfModel.create({
-    title,
-    original_name: req.file.originalname,
+    title: title || original_name,
+    original_name: original_name,
     file_path,
     uploaded_by: req.user.id,
   });
@@ -51,10 +50,8 @@ export const deleteUploadedPdf = asyncHandler(async (req, res) => {
     throw new AppError('PDF record not found', 404);
   }
 
-  const absolutePath = path.join(__dirname, '..', record.file_path.replace(/^\//, ''));
-  if (fs.existsSync(absolutePath)) {
-    fs.unlinkSync(absolutePath);
-  }
+  // Since we are using Azure Blob Storage, we don't delete local files
+  // If we wanted to delete the blob, we would call blobService.deleteBlob(record.file_path)
 
   res.json({
     success: true,

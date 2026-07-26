@@ -50,13 +50,14 @@ export const projectModel = {
       category,
       featured,
       status,
+      timeline,
     } = projectData;
 
     const result = await query(
-      `INSERT INTO projects (title, description, technologies, github, demo, image, category, featured, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO projects (title, description, technologies, github, demo, image, category, featured, status, timeline)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
-      [title, description, technologies, github, demo, image, category, featured, status]
+      [title, description, technologies, github, demo, image, category, featured, status, timeline]
     );
     return result.rows[0];
   },
@@ -73,16 +74,17 @@ export const projectModel = {
       category,
       featured,
       status,
+      timeline,
     } = projectData;
 
     const result = await query(
       `UPDATE projects 
        SET title = $1, description = $2, technologies = $3, github = $4, 
            demo = $5, image = $6, category = $7, featured = $8, status = $9,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $10
+           timeline = $10, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $11
        RETURNING *`,
-      [title, description, technologies, github, demo, image, category, featured, status, id]
+      [title, description, technologies, github, demo, image, category, featured, status, timeline, id]
     );
     return result.rows[0];
   },

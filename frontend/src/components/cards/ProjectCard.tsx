@@ -3,7 +3,15 @@
  * All rights reserved.
  */
 
+import { useState } from 'react';
 import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Typography,
+  Divider,
+  Stack,
   Button,
   Chip,
   Box,
@@ -25,6 +33,7 @@ interface ProjectCardProps {
 }
 
 function ProjectCard({ project, featured = false }: ProjectCardProps) {
+  const [openDetails, setOpenDetails] = useState(false);
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -46,6 +55,7 @@ function ProjectCard({ project, featured = false }: ProjectCardProps) {
   };
 
   return (
+    <>
     <BaseCard
       title={project.title}
       description={project.description}
@@ -97,16 +107,13 @@ function ProjectCard({ project, featured = false }: ProjectCardProps) {
           <Button
             variant="outlined"
             size="small"
-            startIcon={<LaunchIcon />}
-            href={project.demo || project.github}
-            target="_blank"
-            rel="noopener noreferrer"
+            onClick={() => setOpenDetails(true)}
             sx={{
               minWidth: 'auto',
               fontSize: '0.8rem',
             }}
           >
-            View
+            Details
           </Button>
         </>
       }
@@ -119,7 +126,91 @@ function ProjectCard({ project, featured = false }: ProjectCardProps) {
           sx={{ mb: 1 }}
         />
       </Box>
+
     </BaseCard>
+      
+      {/* Project Details Dialog */}
+      <Dialog open={openDetails} onClose={() => setOpenDetails(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ pb: 1 }}>
+          <Typography variant="h5" component="div" fontWeight="bold">
+            {project.title}
+          </Typography>
+        </DialogTitle>
+        <Divider />
+        <DialogContent>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Description
+            </Typography>
+            <Typography variant="body1" color="text.secondary" paragraph>
+              {project.description}
+            </Typography>
+          </Box>
+          
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Technologies
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              {project.technologies?.map((tech, index) => (
+                <Chip key={index} label={tech} size="small" />
+              ))}
+            </Box>
+          </Box>
+          
+          {project.timeline && (
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Project Timeline
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                {project.timeline}
+              </Typography>
+            </Box>
+          )}
+
+          <Box sx={{ mb: 2 }}>
+             <Typography variant="h6" gutterBottom>
+               Details
+             </Typography>
+             <Stack spacing={1}>
+               <Typography variant="body2"><strong>Status:</strong> {project.status}</Typography>
+               <Typography variant="body2"><strong>Category:</strong> {project.category}</Typography>
+               <Typography variant="body2"><strong>Date:</strong> {formatDate(project.createdAt)}</Typography>
+             </Stack>
+          </Box>
+        </DialogContent>
+        <Divider />
+        <DialogActions sx={{ p: 2, display: 'flex', justifyContent: 'space-between' }}>
+          <Box>
+            {project.github && (
+              <Button
+                startIcon={<GitHubIcon />}
+                href={project.github}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ mr: 1 }}
+              >
+                GitHub
+              </Button>
+            )}
+            {project.demo && (
+              <Button
+                startIcon={<LaunchIcon />}
+                href={project.demo}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Live Demo
+              </Button>
+            )}
+          </Box>
+          <Button onClick={() => setOpenDetails(false)} variant="contained">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }
 

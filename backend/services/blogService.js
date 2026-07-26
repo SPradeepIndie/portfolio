@@ -125,8 +125,12 @@ export const getBlogsByTag = asyncHandler(async (req, res) => {
 export const createBlog = asyncHandler(async (req, res) => {
   const { title, excerpt, content, author, pdf_url } = req.body;
 
-  if (!title || !excerpt || !content || !author) {
-    throw new AppError('Title, excerpt, content, and author are required', 400);
+  if (!title || !excerpt || !author) {
+    throw new AppError('Title, excerpt, and author are required', 400);
+  }
+  
+  if (!content && !pdf_url) {
+    throw new AppError('Either content or pdf_url must be provided', 400);
   }
 
   const blogData = {

@@ -36,11 +36,14 @@ import {
   Download,
   Description,
   PictureAsPdf,
+  Work,
 } from '@mui/icons-material'
 import { apiService } from '../../services/api'
+import type { Project } from '../../services/api'
 import { useAuth } from '../../hooks/useAuth'
 
 interface BlogPost {
+  author: string
   id: number
   title: string
   excerpt: string
@@ -48,6 +51,7 @@ interface BlogPost {
   category: string
   tags: string[]
   featured: boolean
+  pdf_path?: string
   created_at?: string
   updated_at?: string
 }
@@ -64,10 +68,11 @@ export const PostManagementPage = () => {
   const { isAuthenticated } = useAuth()
   const [blogs, setBlogs] = useState<BlogPost[]>([])
   const [pdfs, setPdfs] = useState<PdfFile[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'blogs' | 'pdfs'>('blogs')
+  const [activeTab, setActiveTab] = useState<'blogs' | 'pdfs' | 'projects'>('blogs')
 
   // Blog form state
   const [blogDialogOpen, setBlogDialogOpen] = useState(false)
@@ -75,11 +80,29 @@ export const PostManagementPage = () => {
     title: '',
     excerpt: '',
     content: '',
+    author: '',
     category: '',
     tags: '',
     featured: false,
   })
   const [editingBlogId, setEditingBlogId] = useState<number | null>(null)
+  const [blogPdfFile, setBlogPdfFile] = useState<File | null>(null)
+
+  // Project form state
+  const [projectDialogOpen, setProjectDialogOpen] = useState(false)
+  const [projectForm, setProjectForm] = useState({
+    title: '',
+    description: '',
+    technologies: '',
+    github: '',
+    demo: '',
+    image: '',
+    category: '',
+    featured: false,
+    status: 'Completed',
+    timeline: '',
+  })
+  const [editingProjectId, setEditingProjectId] = useState<number | null>(null)
 
   // PDF upload state
   const [pdfFile, setPdfFile] = useState<File | null>(null)
@@ -87,7 +110,7 @@ export const PostManagementPage = () => {
 
   // Delete dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [deleteType, setDeleteType] = useState<'blog' | 'pdf' | null>(null)
+  const [deleteType, setDeleteType] = useState<'blog' | 'pdf' | 'project' | null>(null)
   const [deleteId, setDeleteId] = useState<number | null>(null)
 
   useEffect(() => {
@@ -99,12 +122,14 @@ export const PostManagementPage = () => {
   const loadData = async () => {
     setIsLoading(true)
     try {
-      const [blogsData, pdfsData] = await Promise.all([
+      const [blogsData, pdfsData, projectsData] = await Promise.all([
         apiService.getBlogs().catch(() => []),
         apiService.getUploadedPdfs().catch(() => []),
+        apiService.getProjects().catch(() => []),
       ])
       setBlogs(blogsData)
       setPdfs(pdfsData)
+      setProjects(projectsData)
     } catch (err) {
       console.error('Failed to load data:', err)
       setError('Failed to load your posts and files')
@@ -120,6 +145,7 @@ export const PostManagementPage = () => {
         title: blog.title,
         excerpt: blog.excerpt,
         content: blog.content,
+        author: blog.author || '',
         category: blog.category,
         tags: blog.tags.join(', '),
         featured: blog.featured,
@@ -130,12 +156,14 @@ export const PostManagementPage = () => {
         title: '',
         excerpt: '',
         content: '',
+        author: '',
         category: '',
         tags: '',
         featured: false,
       })
       setEditingBlogId(null)
     }
+    setBlogPdfFile(null)
     setBlogDialogOpen(true)
   }
 
@@ -145,8 +173,13 @@ export const PostManagementPage = () => {
   }
 
   const handleSaveBlog = async () => {
-    if (!blogForm.title || !blogForm.excerpt || !blogForm.content) {
-      setError('Please fill in all required fields')
+    if (!blogForm.title || !blogForm.excerpt || !blogForm.author) {
+      setError('Title, excerpt, and author are required')
+      return
+    }
+
+    if (!blogForm.content && !blogPdfFile) {
+      setError('Either content or a PDF file must be provided')
       return
     }
 
@@ -154,13 +187,24 @@ export const PostManagementPage = () => {
       setMessage(null)
       setError(null)
 
+      let finalPdfUrl = editingBlogId ? blogs.find(b => b.id === editingBlogId)?.pdf_path : undefined;
+
+      if (blogPdfFile) {
+        // Upload the PDF
+        const { uploadUrl } = await apiService.requestPdfUploadUrl(blogPdfFile.name);
+        await apiService.uploadPdfToBlob(uploadUrl, blogPdfFile);
+        finalPdfUrl = uploadUrl.split('?')[0];
+      }
+
       const payload = {
         title: blogForm.title,
         excerpt: blogForm.excerpt,
         content: blogForm.content,
+        author: blogForm.author,
         category: blogForm.category,
         tags: blogForm.tags.split(',').map((tag) => tag.trim()),
         featured: blogForm.featured,
+        pdf_url: finalPdfUrl,
       }
 
       if (editingBlogId) {
@@ -175,6 +219,77 @@ export const PostManagementPage = () => {
       await loadData()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save blog')
+    }
+  }
+
+
+  // Project handlers
+  const handleOpenProjectDialog = (project?: Project) => {
+    if (project) {
+      setProjectForm({
+        title: project.title,
+        description: project.description,
+        technologies: project.technologies ? project.technologies.join(', ') : '',
+        github: project.github || '',
+        demo: project.demo || '',
+        image: project.image || '',
+        category: project.category || '',
+        featured: project.featured,
+        status: project.status || 'Completed',
+        timeline: project.timeline || '',
+      })
+      setEditingProjectId(project.id)
+    } else {
+      setProjectForm({
+        title: '',
+        description: '',
+        technologies: '',
+        github: '',
+        demo: '',
+        image: '',
+        category: '',
+        featured: false,
+        status: 'Completed',
+        timeline: '',
+      })
+      setEditingProjectId(null)
+    }
+    setProjectDialogOpen(true)
+  }
+
+  const handleCloseProjectDialog = () => {
+    setProjectDialogOpen(false)
+    setEditingProjectId(null)
+  }
+
+  const handleSaveProject = async () => {
+    if (!projectForm.title || !projectForm.description) {
+      setError('Please fill in title and description')
+      return
+    }
+
+    try {
+      setMessage(null)
+      setError(null)
+
+      const payload = {
+        ...projectForm,
+        status: projectForm.status as 'Completed' | 'In Progress' | 'Planning',
+        technologies: projectForm.technologies ? projectForm.technologies.split(',').map((tag) => tag.trim()) : [],
+      }
+
+      if (editingProjectId) {
+        await apiService.updateProject(editingProjectId, payload)
+        setMessage('Project updated successfully')
+      } else {
+        await apiService.createProject(payload)
+        setMessage('Project created successfully')
+      }
+
+      handleCloseProjectDialog()
+      await loadData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save project')
     }
   }
 
@@ -219,7 +334,7 @@ export const PostManagementPage = () => {
   }
 
   // Delete handlers
-  const handleOpenDeleteDialog = (type: 'blog' | 'pdf', id: number) => {
+  const handleOpenDeleteDialog = (type: 'blog' | 'pdf' | 'project', id: number) => {
     setDeleteType(type)
     setDeleteId(id)
     setDeleteDialogOpen(true)
@@ -235,6 +350,9 @@ export const PostManagementPage = () => {
       if (deleteType === 'blog') {
         await apiService.deleteBlog(deleteId)
         setMessage('Blog deleted successfully')
+      } else if (deleteType === 'project') {
+        await apiService.deleteProject(deleteId)
+        setMessage('Project deleted successfully')
       } else {
         await apiService.deletePdf(deleteId)
         setMessage('PDF deleted successfully')
@@ -323,6 +441,13 @@ export const PostManagementPage = () => {
             startIcon={<PictureAsPdf />}
           >
             PDFs ({pdfs.length})
+          </Button>
+          <Button
+            variant={activeTab === 'projects' ? 'contained' : 'outlined'}
+            onClick={() => setActiveTab('projects')}
+            startIcon={<Work />}
+          >
+            Projects ({projects.length})
           </Button>
         </Stack>
       </Box>
@@ -486,6 +611,73 @@ export const PostManagementPage = () => {
         </Box>
       )}
 
+
+      {/* Projects Tab */}
+      {activeTab === 'projects' && (
+        <Box>
+          <Card elevation={2} sx={{ mb: 3 }}>
+            <CardContent>
+              <Button
+                variant="contained"
+                startIcon={<CloudUpload />}
+                onClick={() => handleOpenProjectDialog()}
+                fullWidth
+              >
+                Create New Project
+              </Button>
+            </CardContent>
+          </Card>
+
+          {projects.length === 0 ? (
+            <Card elevation={2}>
+              <CardContent sx={{ textAlign: 'center', py: 4 }}>
+                <Typography color="text.secondary">No projects yet</Typography>
+              </CardContent>
+            </Card>
+          ) : (
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2 }}>
+              {projects.map((project) => (
+                <Box key={project.id}>
+                  <Card elevation={2} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <CardContent sx={{ flexGrow: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                        {project.title}
+                      </Typography>
+                      <Typography color="text.secondary" sx={{ mb: 2, fontSize: '0.875rem' }}>
+                        {project.description}
+                      </Typography>
+                      <Box sx={{ mb: 2 }}>
+                        {project.featured && (
+                          <Chip label="Featured" size="small" color="primary" sx={{ mr: 1 }} />
+                        )}
+                        <Chip label={project.category} size="small" variant="outlined" />
+                      </Box>
+                    </CardContent>
+                    <Divider />
+                    <Box sx={{ p: 1, display: 'flex', gap: 1 }}>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleOpenProjectDialog(project)}
+                        color="primary"
+                      >
+                        <Edit fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleOpenDeleteDialog('project', project.id)}
+                        color="error"
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  </Card>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
+      )}
+
       {/* Blog Dialog */}
       <Dialog open={blogDialogOpen} onClose={handleCloseBlogDialog} maxWidth="sm" fullWidth>
         <DialogTitle>{editingBlogId ? 'Edit Blog Post' : 'Create New Blog Post'}</DialogTitle>
@@ -513,6 +705,32 @@ export const PostManagementPage = () => {
               value={blogForm.content}
               onChange={(e) => setBlogForm({ ...blogForm, content: e.target.value })}
             />
+
+            <TextField
+              label="Author"
+              fullWidth
+              value={blogForm.author}
+              onChange={(e) => setBlogForm({ ...blogForm, author: e.target.value })}
+            />
+
+            <Box>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Or upload a PDF for this blog post
+              </Typography>
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => setBlogPdfFile(e.target.files?.[0] || null)}
+                style={{ display: 'none' }}
+                id="blog-pdf-input"
+              />
+              <label htmlFor="blog-pdf-input">
+                <Button variant="outlined" component="span" fullWidth>
+                  {blogPdfFile ? blogPdfFile.name : 'Select PDF (Optional)'}
+                </Button>
+              </label>
+            </Box>
+
             <TextField
               label="Category"
               fullWidth
@@ -535,12 +753,84 @@ export const PostManagementPage = () => {
         </DialogActions>
       </Dialog>
 
+
+      {/* Project Dialog */}
+      <Dialog open={projectDialogOpen} onClose={handleCloseProjectDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>{editingProjectId ? 'Edit Project' : 'Create New Project'}</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Stack spacing={2}>
+            <TextField
+              label="Title"
+              fullWidth
+              value={projectForm.title}
+              onChange={(e) => setProjectForm({ ...projectForm, title: e.target.value })}
+            />
+            <TextField
+              label="Description"
+              fullWidth
+              multiline
+              rows={3}
+              value={projectForm.description}
+              onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
+            />
+            <TextField
+              label="Technologies (comma separated)"
+              fullWidth
+              value={projectForm.technologies}
+              onChange={(e) => setProjectForm({ ...projectForm, technologies: e.target.value })}
+            />
+            <TextField
+              label="GitHub Link"
+              fullWidth
+              value={projectForm.github}
+              onChange={(e) => setProjectForm({ ...projectForm, github: e.target.value })}
+            />
+            <TextField
+              label="Demo Link"
+              fullWidth
+              value={projectForm.demo}
+              onChange={(e) => setProjectForm({ ...projectForm, demo: e.target.value })}
+            />
+            <TextField
+              label="Image URL"
+              fullWidth
+              value={projectForm.image}
+              onChange={(e) => setProjectForm({ ...projectForm, image: e.target.value })}
+            />
+            <TextField
+              label="Category"
+              fullWidth
+              value={projectForm.category}
+              onChange={(e) => setProjectForm({ ...projectForm, category: e.target.value })}
+            />
+            <TextField
+              label="Status"
+              fullWidth
+              value={projectForm.status}
+              onChange={(e) => setProjectForm({ ...projectForm, status: e.target.value })}
+            />
+            <TextField
+              label="Timeline (Optional)"
+              fullWidth
+              value={projectForm.timeline}
+              onChange={(e) => setProjectForm({ ...projectForm, timeline: e.target.value })}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseProjectDialog}>Cancel</Button>
+          <Button onClick={handleSaveProject} variant="contained">
+            {editingProjectId ? 'Update' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete this {deleteType === 'blog' ? 'blog post' : 'PDF file'}? This
+            Are you sure you want to delete this {deleteType === 'blog' ? 'blog post' : deleteType === 'project' ? 'project' : 'PDF file'}? This
             action cannot be undone.
           </Typography>
         </DialogContent>
