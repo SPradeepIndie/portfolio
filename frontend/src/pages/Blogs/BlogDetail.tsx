@@ -4,7 +4,7 @@
  * All rights reserved.
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -88,8 +88,8 @@ export const BlogDetail = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: { xs: 4, md: 8 } }}>
-      <Button 
-        startIcon={<ArrowBackIcon />} 
+      <Button
+        startIcon={<ArrowBackIcon />}
         onClick={() => navigate('/blogs')}
         sx={{ mb: 4 }}
       >
@@ -100,7 +100,7 @@ export const BlogDetail = () => {
         <Typography variant="h3" component="h1" fontWeight="bold" gutterBottom>
           {blog.title}
         </Typography>
-        
+
         <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
           <Stack direction="row" spacing={1} alignItems="center">
             <Avatar sx={{ width: 24, height: 24 }}>
@@ -130,10 +130,10 @@ export const BlogDetail = () => {
 
       {pdfUrl ? (
         <Box sx={{ height: '80vh', width: '100%', bgcolor: '#f5f5f5', borderRadius: 2, overflow: 'hidden' }}>
-          <iframe 
-            src={pdfUrl} 
-            width="100%" 
-            height="100%" 
+          <iframe
+            src={pdfUrl}
+            width="100%"
+            height="100%"
             title={blog.title}
             style={{ border: 'none' }}
           />
