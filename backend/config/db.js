@@ -12,7 +12,7 @@ dotenv.config();
 const { Pool } = pg;
 
 // Create PostgreSQL connection pool
-const pool = new Pool({
+const poolConfig = {
   host: process.env.DB_HOST || 'localhost',
   port: process.env.DB_PORT || 5432,
   database: process.env.DB_NAME || 'portfolio',
@@ -21,7 +21,18 @@ const pool = new Pool({
   max: 10, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
-});
+};
+
+// Production databases (like Azure Database for PostgreSQL) require SSL/encryption.
+// The error 'no encryption' shows that PostgreSQL is rejecting non-SSL connections.
+const isLocal = ['localhost', '127.0.0.1', 'postgres', 'db'].includes(poolConfig.host.toLowerCase());
+if (!isLocal || process.env.DB_SSL === 'true') {
+  poolConfig.ssl = {
+    rejectUnauthorized: false
+  };
+}
+
+const pool = new Pool(poolConfig);
 
 // Test database connection
 pool.on('connect', () => {

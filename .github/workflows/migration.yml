@@ -29,6 +29,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # This will update the database.json file with the environment variables
+      # Using github action variables for the DB_HOST, DB_PORT, DB_NAME, DB_USER
+      # Using github secrets for the DB_PASSWORD
       - name: Substitute environment variables in database.json
         env:
           DB_HOST: ${{ vars.DB_HOST }}
@@ -37,7 +40,8 @@ jobs:
           DB_USER: ${{ vars.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: node substitute-env.js
-
+  
+      #Run production migrations
       - name: Run production migrations
         env:
           DB_HOST: ${{ vars.DB_HOST }}
