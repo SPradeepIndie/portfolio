@@ -11,6 +11,8 @@ properties:
         value: ${ACR_PASSWORD}
       - name: db-password-secret
         value: ${DB_PASSWORD}
+      - name: azure-storage-connection-string
+        value: ${AZURE_STORAGE_CONNECTION_STRING}
     registries:
       - server: ${ACR_LOGIN_SERVER}
         username: ${ACR_USERNAME}
@@ -33,6 +35,10 @@ properties:
             value: ${DB_USER}
           - name: DB_PASSWORD
             secretRef: db-password-secret
+          - name: AZURE_STORAGE_CONNECTION_STRING
+            secretRef: azure-storage-connection-string
+          - name: AZURE_BLOB_CONTAINER_NAME
+            value: ${AZURE_BLOB_CONTAINER_NAME}
     scale:
       minReplicas: 1
       maxReplicas: 2

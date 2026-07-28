@@ -131,6 +131,8 @@ jobs:
           export DB_NAME="${{ vars.DB_NAME }}"
           export DB_USER="${{ vars.DB_USER }}"
           export DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+          export AZURE_STORAGE_CONNECTION_STRING="${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}"
+          export AZURE_BLOB_CONTAINER_NAME="${{ vars.AZURE_BLOB_CONTAINER_NAME }}"
           envsubst < backend/containerapp.yaml > "$RUNNER_TEMP/container-apps/backend.yaml"
 
       - name: Deploy backend container app

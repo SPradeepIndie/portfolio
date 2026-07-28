@@ -399,7 +399,7 @@ export const apiService = {
 
   async getUploadedPdfs(): Promise<Array<{ id: number; filename: string; file_path: string; file_size: number; uploaded_at: string }>> {
     try {
-      const response = await api.get<{ success: boolean; data: Array<{ id: number; filename: string; file_path: string; file_size: number; uploaded_at: string }> }>('/api/pdfs');
+      const response = await api.get<{ success: boolean; data: Array<{ id: number; filename: string; file_path: string; file_size: number; uploaded_at: string }> }>('/api/admin/pdfs');
       return response.data.data;
     } catch (error) {
       console.error('Failed to fetch PDFs:', error);
@@ -410,12 +410,12 @@ export const apiService = {
   async uploadPdf(file: File): Promise<{ id: number; filename: string; file_path: string; file_size: number; uploaded_at: string }> {
     try {
       const { uploadUrl } = await this.requestPdfUploadUrl(file.name);
-      
+
       await this.uploadPdfToBlob(uploadUrl, file);
 
       const directUrl = uploadUrl.split('?')[0];
 
-      const response = await api.post<{ success: boolean; data: { id: number; filename: string; file_path: string; file_size: number; uploaded_at: string } }>('/api/pdfs/upload', {
+      const response = await api.post<{ success: boolean; data: { id: number; filename: string; file_path: string; file_size: number; uploaded_at: string } }>('/api/admin/pdfs/upload', {
         title: file.name,
         original_name: file.name,
         file_path: directUrl,
@@ -430,7 +430,7 @@ export const apiService = {
 
   async deletePdf(id: number): Promise<void> {
     try {
-      await api.delete(`/api/pdfs/${id}`);
+      await api.delete(`/api/admin/pdfs/${id}`);
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Failed to delete PDF'));
     }
