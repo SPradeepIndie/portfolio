@@ -102,6 +102,13 @@ api.interceptors.response.use(
 );
 
 // Type definitions
+export interface TimelineEvent {
+  startTime: string;
+  endTime: string;
+  duration: string;
+  description: string;
+}
+
 export interface Project {
   id: number;
   title: string;
@@ -114,7 +121,7 @@ export interface Project {
   featured: boolean;
   createdAt: string;
   status: 'Completed' | 'In Progress' | 'Planning';
-  timeline?: string;
+  timeline?: TimelineEvent[];
 }
 
 export interface Blog {
@@ -187,6 +194,16 @@ export interface UpdateProfilePayload {
 }
 
 // API service functions
+
+// Helper to calculate SHA-256 hash of a file
+export async function calculateFileHash(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
 export const apiService = {
   // Projects
   async getProjects(): Promise<Project[]> {
@@ -359,9 +376,9 @@ export const apiService = {
   },
 
   // Azure Blob Storage PDF upload flow
-  async requestPdfUploadUrl(filename: string): Promise<{ uploadUrl: string; blobName: string; expiresIn: number }> {
+  async requestPdfUploadUrl(filename: string, fileHash?: string): Promise<{ uploadUrl: string; blobName: string; expiresIn: number; exists?: boolean }> {
     try {
-      const response = await api.post<{ success: boolean; data: { uploadUrl: string; blobName: string; expiresIn: number } }>('/api/blogs/upload-url/request', { filename });
+      const response = await api.post<{ success: boolean; data: { uploadUrl: string; blobName: string; expiresIn: number; exists?: boolean } }>('/api/admin/pdfs/upload-url/request', { filename, fileHash });
       return response.data.data;
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Failed to request upload URL'));
@@ -420,6 +437,7 @@ export const apiService = {
         original_name: file.name,
         file_path: directUrl,
         file_size: file.size,
+        file_hash: await calculateFileHash(file),
       });
 
       return response.data.data;

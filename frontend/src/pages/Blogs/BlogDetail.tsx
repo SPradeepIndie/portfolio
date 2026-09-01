@@ -25,6 +25,7 @@ import {
 } from '@mui/icons-material';
 import { apiService } from '../../services/api';
 import type { Blog } from '../../services/api';
+import ReactMarkdown from 'react-markdown';
 
 export const BlogDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -140,11 +141,7 @@ export const BlogDetail = () => {
         </Box>
       ) : (
         <Box sx={{ typography: 'body1', lineHeight: 1.8 }}>
-          {blog.content.split('\\n').map((paragraph, idx) => (
-            <Typography key={idx} paragraph>
-              {paragraph}
-            </Typography>
-          ))}
+          <ReactMarkdown>{blog.content}</ReactMarkdown>
         </Box>
       )}
     </Container>
