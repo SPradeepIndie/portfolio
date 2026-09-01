@@ -17,6 +17,9 @@ import {
   Box,
   IconButton,
   Tooltip,
+  Stepper,
+  Step,
+  StepLabel,
 } from '@mui/material';
 import {
   GitHub as GitHubIcon,
@@ -158,14 +161,36 @@ function ProjectCard({ project, featured = false }: ProjectCardProps) {
             </Box>
           </Box>
           
-          {project.timeline && (
-            <Box sx={{ mb: 3 }}>
+          {project.timeline && project.timeline.length > 0 && (
+            <Box sx={{ mb: 4 }}>
               <Typography variant="h6" gutterBottom>
                 Project Timeline
               </Typography>
-              <Typography variant="body1" color="text.secondary">
-                {project.timeline}
-              </Typography>
+              <Box sx={{ width: '100%', overflowX: 'auto', py: 2 }}>
+                <Stepper alternativeLabel activeStep={project.timeline.length} connector={
+                  <Box sx={{ height: 4, bgcolor: 'primary.main', borderRadius: 2, flex: '1 1 auto', mx: 1, mt: 1.5 }} />
+                }>
+                  {project.timeline.map((event, index) => (
+                    <Step key={index}>
+                      <StepLabel
+                        StepIconComponent={() => (
+                          <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: 'primary.main', zIndex: 1, position: 'relative' }} />
+                        )}
+                      >
+                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                          {event.startTime} {event.endTime ? ` - ${event.endTime}` : ''}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          {event.duration}
+                        </Typography>
+                        <Typography variant="body2" sx={{ mt: 1 }}>
+                          {event.description}
+                        </Typography>
+                      </StepLabel>
+                    </Step>
+                  ))}
+                </Stepper>
+              </Box>
             </Box>
           )}
 

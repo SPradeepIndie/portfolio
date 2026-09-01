@@ -14,6 +14,7 @@ const router = express.Router();
 router.use(authenticateToken);
 
 router.get('/', pdfService.getUploadedPdfs);
+router.post('/upload-url/request', pdfService.getUploadUrl);
 router.post('/upload', pdfService.uploadPdf);
 router.delete('/:id', pdfService.deleteUploadedPdf);
 

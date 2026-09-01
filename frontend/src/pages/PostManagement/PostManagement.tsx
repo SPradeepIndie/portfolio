@@ -21,25 +21,20 @@ import {
   Stack,
   TextField,
   Typography,
-  Paper,
   Chip,
   IconButton,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
 } from '@mui/material'
 import {
   CloudUpload,
   Delete,
   Edit,
-  Download,
   Description,
-  PictureAsPdf,
   Work,
+  Add,
+  RemoveCircleOutline
 } from '@mui/icons-material'
 import { apiService } from '../../services/api'
-import type { Project } from '../../services/api'
+import type { Project, TimelineEvent } from '../../services/api'
 import { useAuth } from '../../hooks/useAuth'
 
 interface BlogPost {
@@ -56,23 +51,14 @@ interface BlogPost {
   updated_at?: string
 }
 
-interface PdfFile {
-  id: number
-  filename: string
-  file_path: string
-  file_size: number
-  uploaded_at: string
-}
-
 export const PostManagementPage = () => {
   const { isAuthenticated } = useAuth()
   const [blogs, setBlogs] = useState<BlogPost[]>([])
-  const [pdfs, setPdfs] = useState<PdfFile[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'blogs' | 'pdfs' | 'projects'>('blogs')
+  const [activeTab, setActiveTab] = useState<'blogs' | 'projects'>('blogs')
 
   // Blog form state
   const [blogDialogOpen, setBlogDialogOpen] = useState(false)
@@ -100,13 +86,10 @@ export const PostManagementPage = () => {
     category: '',
     featured: false,
     status: 'Completed',
-    timeline: '',
+    timeline: [] as TimelineEvent[],
   })
   const [editingProjectId, setEditingProjectId] = useState<number | null>(null)
 
-  // PDF upload state
-  const [pdfFile, setPdfFile] = useState<File | null>(null)
-  const [isUploadingPdf, setIsUploadingPdf] = useState(false)
 
   // Delete dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -122,13 +105,11 @@ export const PostManagementPage = () => {
   const loadData = async () => {
     setIsLoading(true)
     try {
-      const [blogsData, pdfsData, projectsData] = await Promise.all([
+      const [blogsData, projectsData] = await Promise.all([
         apiService.getBlogs().catch(() => []),
-        apiService.getUploadedPdfs().catch(() => []),
         apiService.getProjects().catch(() => []),
       ])
       setBlogs(blogsData)
-      setPdfs(pdfsData)
       setProjects(projectsData)
     } catch (err) {
       console.error('Failed to load data:', err)
@@ -190,10 +171,8 @@ export const PostManagementPage = () => {
       let finalPdfUrl = editingBlogId ? blogs.find(b => b.id === editingBlogId)?.pdf_path : undefined;
 
       if (blogPdfFile) {
-        // Upload the PDF
-        const { uploadUrl } = await apiService.requestPdfUploadUrl(blogPdfFile.name);
-        await apiService.uploadPdfToBlob(uploadUrl, blogPdfFile);
-        finalPdfUrl = uploadUrl.split('?')[0];
+        const uploadedPdf = await apiService.uploadPdf(blogPdfFile);
+        finalPdfUrl = uploadedPdf.file_path;
       }
 
       const payload = {
@@ -236,7 +215,7 @@ export const PostManagementPage = () => {
         category: project.category || '',
         featured: project.featured,
         status: project.status || 'Completed',
-        timeline: project.timeline || '',
+        timeline: project.timeline || [],
       })
       setEditingProjectId(project.id)
     } else {
@@ -250,7 +229,7 @@ export const PostManagementPage = () => {
         category: '',
         featured: false,
         status: 'Completed',
-        timeline: '',
+        timeline: [],
       })
       setEditingProjectId(null)
     }
@@ -293,45 +272,6 @@ export const PostManagementPage = () => {
     }
   }
 
-  // PDF handlers
-  const handlePdfFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      if (file.type !== 'application/pdf') {
-        setError('Please select a PDF file')
-        return
-      }
-      if (file.size > 50 * 1024 * 1024) {
-        setError('File size must be less than 50MB')
-        return
-      }
-      setPdfFile(file)
-      setError(null)
-    }
-  }
-
-  const handleUploadPdf = async () => {
-    if (!pdfFile) {
-      setError('Please select a PDF file')
-      return
-    }
-
-    try {
-      setIsUploadingPdf(true)
-      setMessage(null)
-      setError(null)
-
-      // Upload PDF via backend endpoint (simpler & server-managed)
-      await apiService.uploadPdf(pdfFile)
-      setMessage('PDF uploaded successfully')
-      setPdfFile(null)
-      await loadData()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload PDF')
-    } finally {
-      setIsUploadingPdf(false)
-    }
-  }
 
   // Delete handlers
   const handleOpenDeleteDialog = (type: 'blog' | 'pdf' | 'project', id: number) => {
@@ -436,13 +376,6 @@ export const PostManagementPage = () => {
             Blogs ({blogs.length})
           </Button>
           <Button
-            variant={activeTab === 'pdfs' ? 'contained' : 'outlined'}
-            onClick={() => setActiveTab('pdfs')}
-            startIcon={<PictureAsPdf />}
-          >
-            PDFs ({pdfs.length})
-          </Button>
-          <Button
             variant={activeTab === 'projects' ? 'contained' : 'outlined'}
             onClick={() => setActiveTab('projects')}
             startIcon={<Work />}
@@ -522,95 +455,6 @@ export const PostManagementPage = () => {
           )}
         </Box>
       )}
-
-      {/* PDFs Tab */}
-      {activeTab === 'pdfs' && (
-        <Box>
-          <Card elevation={2} sx={{ mb: 3 }}>
-            <CardContent>
-              <Stack spacing={2}>
-                <Box>
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={handlePdfFileChange}
-                    style={{ display: 'none' }}
-                    id="pdf-input"
-                  />
-                  <label htmlFor="pdf-input" style={{ width: '100%' }}>
-                    <Button
-                      variant="contained"
-                      component="span"
-                      startIcon={<CloudUpload />}
-                      fullWidth
-                    >
-                      Select PDF File
-                    </Button>
-                  </label>
-                </Box>
-                {pdfFile && (
-                  <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
-                    <Typography variant="body2">{pdfFile.name}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {(pdfFile.size / 1024).toFixed(2)} KB
-                    </Typography>
-                  </Box>
-                )}
-                <Button
-                  variant="contained"
-                  onClick={handleUploadPdf}
-                  disabled={!pdfFile || isUploadingPdf}
-                  fullWidth
-                >
-                  {isUploadingPdf ? 'Uploading...' : 'Upload PDF'}
-                </Button>
-              </Stack>
-            </CardContent>
-          </Card>
-
-          {pdfs.length === 0 ? (
-            <Card elevation={2}>
-              <CardContent sx={{ textAlign: 'center', py: 4 }}>
-                <Typography color="text.secondary">No PDF files uploaded yet</Typography>
-              </CardContent>
-            </Card>
-          ) : (
-            <List>
-              {pdfs.map((pdf) => (
-                <Paper key={pdf.id} sx={{ mb: 1 }}>
-                  <ListItem>
-                    <PictureAsPdf sx={{ mr: 2, color: 'error.main' }} />
-                    <ListItemText
-                      primary={pdf.filename}
-                      secondary={`${(pdf.file_size / 1024).toFixed(2)} KB • ${new Date(pdf.uploaded_at).toLocaleDateString()}`}
-                    />
-                    <ListItemSecondaryAction>
-                      <IconButton
-                        edge="end"
-                        href={pdf.file_path}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        color="primary"
-                        sx={{ mr: 1 }}
-                      >
-                        <Download fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        edge="end"
-                        onClick={() => handleOpenDeleteDialog('pdf', pdf.id)}
-                        color="error"
-                      >
-                        <Delete fontSize="small" />
-                      </IconButton>
-                    </ListItemSecondaryAction>
-                  </ListItem>
-                </Paper>
-              ))}
-            </List>
-          )}
-        </Box>
-      )}
-
 
       {/* Projects Tab */}
       {activeTab === 'projects' && (
@@ -704,6 +548,7 @@ export const PostManagementPage = () => {
               rows={4}
               value={blogForm.content}
               onChange={(e) => setBlogForm({ ...blogForm, content: e.target.value })}
+              helperText="You can use Markdown for styling (e.g., **bold**, # Heading, [link](url))"
             />
 
             <TextField
@@ -809,12 +654,83 @@ export const PostManagementPage = () => {
               value={projectForm.status}
               onChange={(e) => setProjectForm({ ...projectForm, status: e.target.value })}
             />
-            <TextField
-              label="Timeline (Optional)"
-              fullWidth
-              value={projectForm.timeline}
-              onChange={(e) => setProjectForm({ ...projectForm, timeline: e.target.value })}
-            />
+            
+            <Box>
+              <Typography variant="subtitle1" gutterBottom>Timeline Events</Typography>
+              {projectForm.timeline.map((event, index) => (
+                <Card variant="outlined" sx={{ p: 2, mb: 2 }} key={index}>
+                  <Stack spacing={2}>
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      <TextField
+                        label="Start Time"
+                        size="small"
+                        type="date"
+                        InputLabelProps={{ shrink: true }}
+                        value={event.startTime}
+                        onChange={(e) => {
+                          const newTimeline = [...projectForm.timeline];
+                          newTimeline[index].startTime = e.target.value;
+                          setProjectForm({ ...projectForm, timeline: newTimeline });
+                        }}
+                        fullWidth
+                      />
+                      <TextField
+                        label="End Time"
+                        size="small"
+                        type="date"
+                        InputLabelProps={{ shrink: true }}
+                        value={event.endTime}
+                        onChange={(e) => {
+                          const newTimeline = [...projectForm.timeline];
+                          newTimeline[index].endTime = e.target.value;
+                          setProjectForm({ ...projectForm, timeline: newTimeline });
+                        }}
+                        fullWidth
+                      />
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                      <TextField
+                        label="Duration (e.g. '2 weeks')"
+                        size="small"
+                        value={event.duration}
+                        onChange={(e) => {
+                          const newTimeline = [...projectForm.timeline];
+                          newTimeline[index].duration = e.target.value;
+                          setProjectForm({ ...projectForm, timeline: newTimeline });
+                        }}
+                        sx={{ width: '40%' }}
+                      />
+                      <TextField
+                        label="Description"
+                        size="small"
+                        value={event.description}
+                        onChange={(e) => {
+                          const newTimeline = [...projectForm.timeline];
+                          newTimeline[index].description = e.target.value;
+                          setProjectForm({ ...projectForm, timeline: newTimeline });
+                        }}
+                        fullWidth
+                      />
+                      <IconButton color="error" onClick={() => {
+                        const newTimeline = projectForm.timeline.filter((_, i) => i !== index);
+                        setProjectForm({ ...projectForm, timeline: newTimeline });
+                      }}>
+                        <RemoveCircleOutline />
+                      </IconButton>
+                    </Box>
+                  </Stack>
+                </Card>
+              ))}
+              <Button startIcon={<Add />} variant="outlined" onClick={() => {
+                setProjectForm({
+                  ...projectForm,
+                  timeline: [...projectForm.timeline, { startTime: '', endTime: '', duration: '', description: '' }]
+                })
+              }}>
+                Add Timeline Event
+              </Button>
+            </Box>
+
           </Stack>
         </DialogContent>
         <DialogActions>
