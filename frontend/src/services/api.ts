@@ -202,6 +202,9 @@ export interface UpdateProfilePayload {
   full_name?: string;
   email?: string;
   password?: string;
+  phone_number?: string;
+  github_link?: string;
+  linkedin_address?: string;
 }
 
 // API service functions

@@ -136,7 +136,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
-  const updateProfile = async (payload: { full_name?: string; email?: string; password?: string }) => {
+  const updateProfile = async (payload: { full_name?: string; email?: string; password?: string; phone_number?: string; github_link?: string; linkedin_address?: string }) => {
     const updatedUser = await apiService.updateCurrentUser(payload)
     setUser(updatedUser)
   }
