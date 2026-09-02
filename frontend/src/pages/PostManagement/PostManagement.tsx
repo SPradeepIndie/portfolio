@@ -23,6 +23,15 @@ import {
   Typography,
   Chip,
   IconButton,
+  Snackbar,
+  Backdrop,
+  CircularProgress,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Switch,
+  FormControlLabel,
 } from '@mui/material'
 import {
   CloudUpload,
@@ -36,6 +45,7 @@ import {
 import { apiService } from '../../services/api'
 import type { Project, TimelineEvent } from '../../services/api'
 import { useAuth } from '../../hooks/useAuth'
+import { SettingsDialog } from './SettingsDialog'
 
 interface BlogPost {
   author: string
@@ -49,16 +59,18 @@ interface BlogPost {
   pdf_path?: string
   created_at?: string
   updated_at?: string
+  is_hidden?: boolean
 }
 
 export const PostManagementPage = () => {
   const { isAuthenticated } = useAuth()
   const [blogs, setBlogs] = useState<BlogPost[]>([])
   const [projects, setProjects] = useState<Project[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'blogs' | 'projects'>('blogs')
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   // Blog form state
   const [blogDialogOpen, setBlogDialogOpen] = useState(false)
@@ -70,6 +82,7 @@ export const PostManagementPage = () => {
     category: '',
     tags: '',
     featured: false,
+    is_hidden: false,
   })
   const [editingBlogId, setEditingBlogId] = useState<number | null>(null)
   const [blogPdfFile, setBlogPdfFile] = useState<File | null>(null)
@@ -87,6 +100,7 @@ export const PostManagementPage = () => {
     featured: false,
     status: 'Completed',
     timeline: [] as TimelineEvent[],
+    is_hidden: false,
   })
   const [editingProjectId, setEditingProjectId] = useState<number | null>(null)
 
@@ -130,6 +144,7 @@ export const PostManagementPage = () => {
         category: blog.category,
         tags: blog.tags.join(', '),
         featured: blog.featured,
+        is_hidden: blog.is_hidden || false,
       })
       setEditingBlogId(blog.id)
     } else {
@@ -141,6 +156,7 @@ export const PostManagementPage = () => {
         category: '',
         tags: '',
         featured: false,
+        is_hidden: false,
       })
       setEditingBlogId(null)
     }
@@ -183,6 +199,7 @@ export const PostManagementPage = () => {
         category: blogForm.category,
         tags: blogForm.tags.split(',').map((tag) => tag.trim()),
         featured: blogForm.featured,
+        is_hidden: blogForm.is_hidden,
         pdf_url: finalPdfUrl,
       }
 
@@ -216,6 +233,7 @@ export const PostManagementPage = () => {
         featured: project.featured,
         status: project.status || 'Completed',
         timeline: project.timeline || [],
+        is_hidden: project.is_hidden || false,
       })
       setEditingProjectId(project.id)
     } else {
@@ -230,6 +248,7 @@ export const PostManagementPage = () => {
         featured: false,
         status: 'Completed',
         timeline: [],
+        is_hidden: false,
       })
       setEditingProjectId(null)
     }
@@ -253,7 +272,7 @@ export const PostManagementPage = () => {
 
       const payload = {
         ...projectForm,
-        status: projectForm.status as 'Completed' | 'In Progress' | 'Planning',
+        status: projectForm.status as 'Completed' | 'In Progress' | 'Planning' | 'Initiated',
         technologies: projectForm.technologies ? projectForm.technologies.split(',').map((tag) => tag.trim()) : [],
       }
 
@@ -355,34 +374,30 @@ export const PostManagementPage = () => {
 
         <Divider sx={{ mb: 3 }} />
 
-        {message && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            {message}
-          </Alert>
-        )}
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
+
 
         {/* Tab buttons */}
-        <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
-          <Button
-            variant={activeTab === 'blogs' ? 'contained' : 'outlined'}
-            onClick={() => setActiveTab('blogs')}
-            startIcon={<Description />}
-          >
-            Blogs ({blogs.length})
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2, justifyContent: 'space-between', alignItems: { xs: 'stretch', md: 'center' }, mb: 3 }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <Button
+              variant={activeTab === 'blogs' ? 'contained' : 'outlined'}
+              onClick={() => setActiveTab('blogs')}
+              startIcon={<Description />}
+            >
+              Blogs ({blogs.length})
+            </Button>
+            <Button
+              variant={activeTab === 'projects' ? 'contained' : 'outlined'}
+              onClick={() => setActiveTab('projects')}
+              startIcon={<Work />}
+            >
+              Projects ({projects.length})
+            </Button>
+          </Stack>
+          <Button variant="outlined" onClick={() => setSettingsOpen(true)}>
+            Manage Tags & Categories
           </Button>
-          <Button
-            variant={activeTab === 'projects' ? 'contained' : 'outlined'}
-            onClick={() => setActiveTab('projects')}
-            startIcon={<Work />}
-          >
-            Projects ({projects.length})
-          </Button>
-        </Stack>
+        </Box>
       </Box>
 
       {/* Blogs Tab */}
@@ -433,13 +448,15 @@ export const PostManagementPage = () => {
                     </CardContent>
                     <Divider />
                     <Box sx={{ p: 1, display: 'flex', gap: 1 }}>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenBlogDialog(blog)}
-                        color="primary"
-                      >
-                        <Edit fontSize="small" />
-                      </IconButton>
+                      {!blog.pdf_path && (
+                        <IconButton
+                          size="small"
+                          onClick={() => handleOpenBlogDialog(blog)}
+                          color="primary"
+                        >
+                          <Edit fontSize="small" />
+                        </IconButton>
+                      )}
                       <IconButton
                         size="small"
                         onClick={() => handleOpenDeleteDialog('blog', blog.id)}
@@ -523,7 +540,7 @@ export const PostManagementPage = () => {
       )}
 
       {/* Blog Dialog */}
-      <Dialog open={blogDialogOpen} onClose={handleCloseBlogDialog} maxWidth="sm" fullWidth>
+      <Dialog open={blogDialogOpen} onClose={handleCloseBlogDialog} maxWidth="md" fullWidth>
         <DialogTitle>{editingBlogId ? 'Edit Blog Post' : 'Create New Blog Post'}</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <Stack spacing={2}>
@@ -588,6 +605,16 @@ export const PostManagementPage = () => {
               value={blogForm.tags}
               onChange={(e) => setBlogForm({ ...blogForm, tags: e.target.value })}
             />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={blogForm.is_hidden}
+                  onChange={(e) => setBlogForm({ ...blogForm, is_hidden: e.target.checked })}
+                  color="primary"
+                />
+              }
+              label="Hide Post"
+            />
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -600,7 +627,7 @@ export const PostManagementPage = () => {
 
 
       {/* Project Dialog */}
-      <Dialog open={projectDialogOpen} onClose={handleCloseProjectDialog} maxWidth="sm" fullWidth>
+      <Dialog open={projectDialogOpen} onClose={handleCloseProjectDialog} maxWidth="md" fullWidth>
         <DialogTitle>{editingProjectId ? 'Edit Project' : 'Create New Project'}</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <Stack spacing={2}>
@@ -648,11 +675,28 @@ export const PostManagementPage = () => {
               value={projectForm.category}
               onChange={(e) => setProjectForm({ ...projectForm, category: e.target.value })}
             />
-            <TextField
-              label="Status"
-              fullWidth
-              value={projectForm.status}
-              onChange={(e) => setProjectForm({ ...projectForm, status: e.target.value })}
+            <FormControl fullWidth>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={projectForm.status}
+                label="Status"
+                onChange={(e) => setProjectForm({ ...projectForm, status: e.target.value as 'Completed' | 'In Progress' | 'Planning' | 'Initiated' })}
+              >
+                <MenuItem value="Initiated">Initiated</MenuItem>
+                <MenuItem value="Planning">Planning</MenuItem>
+                <MenuItem value="In Progress">In Progress</MenuItem>
+                <MenuItem value="Completed">Completed</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={projectForm.is_hidden}
+                  onChange={(e) => setProjectForm({ ...projectForm, is_hidden: e.target.checked })}
+                  color="primary"
+                />
+              }
+              label="Hide Project"
             />
             
             <Box>
@@ -757,6 +801,24 @@ export const PostManagementPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      
+      <Snackbar open={!!message} autoHideDuration={6000} onClose={() => setMessage(null)}>
+        <Alert onClose={() => setMessage(null)} severity="success" sx={{ width: '100%' }}>
+          {message}
+        </Alert>
+      </Snackbar>
+      
+      <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError(null)}>
+        <Alert onClose={() => setError(null)} severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
+      
+      <Backdrop sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }} open={isLoading}>
+        <CircularProgress color="inherit" />
+      </Backdrop>
+
+      <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </Container>
   )
 }

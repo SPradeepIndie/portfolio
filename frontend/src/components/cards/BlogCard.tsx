@@ -22,6 +22,7 @@ import {
 } from '@mui/icons-material';
 import BaseCard from './BaseCard';
 import type { Blog } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
 
 interface BlogCardProps {
   blog: Blog;
@@ -29,6 +30,7 @@ interface BlogCardProps {
 }
 
 function BlogCard({ blog, featured = false }: BlogCardProps) {
+  const navigate = useNavigate();
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -85,7 +87,7 @@ function BlogCard({ blog, featured = false }: BlogCardProps) {
               fontWeight: 500,
             }}
             onClick={() => {
-              window.location.href = `/blog/${blog.id}`;
+              navigate(`/blog/${blog.id}`);
             }}
           >
             Read More

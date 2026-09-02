@@ -9,7 +9,7 @@ import type { ThemeOptions } from '@mui/material/styles'
 
 export const baseTheme: ThemeOptions = {
   typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"Outfit", "Inter", "Roboto", "Helvetica", "Arial", sans-serif',
     h1: {
       fontSize: 'clamp(2rem, 5vw, 3.5rem)',
       fontWeight: 700,
@@ -54,6 +54,24 @@ export const baseTheme: ThemeOptions = {
     borderRadius: 12,
   },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          transition: 'background-color 0.4s ease, color 0.4s ease',
+          '&::-webkit-scrollbar': {
+            width: '8px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: '#8b5cf6',
+            borderRadius: '4px',
+          },
+        },
+        '::selection': {
+          backgroundColor: '#00f2fe',
+          color: '#000',
+        },
+      },
+    },
     MuiContainer: {
       styleOverrides: {
         root: {
@@ -69,6 +87,15 @@ export const baseTheme: ThemeOptions = {
           borderRadius: 8,
           fontSize: 'clamp(0.875rem, 2vw, 1rem)',
           padding: 'clamp(0.5rem, 2vw, 0.75rem) clamp(1rem, 3vw, 1.5rem)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: 'none',
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 8px 20px rgba(0, 0, 0, 0.15)',
+          },
+          '&:active': {
+            transform: 'translateY(1px)',
+          },
         },
       },
     },
@@ -79,6 +106,22 @@ export const baseTheme: ThemeOptions = {
           height: 'auto',
           padding: 'clamp(0.25rem, 1vw, 0.5rem) clamp(0.5rem, 2vw, 0.75rem)',
         },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(18, 18, 18, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1)',
+          transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease',
+          '&:hover': {
+            transform: 'translateY(-8px)',
+            boxShadow: '0 16px 40px 0 rgba(0, 0, 0, 0.2)',
+          }
+        }),
       },
     },
   },

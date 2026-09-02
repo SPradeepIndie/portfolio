@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS tags;
+DROP TABLE IF EXISTS categories;
+
+ALTER TABLE blogs DROP COLUMN IF EXISTS is_hidden;
+ALTER TABLE projects DROP COLUMN IF EXISTS is_hidden;
+
+ALTER TABLE users DROP COLUMN IF EXISTS linkedin_address;
+ALTER TABLE users DROP COLUMN IF EXISTS github_link;
+ALTER TABLE users DROP COLUMN IF EXISTS phone_number;

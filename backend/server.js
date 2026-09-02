@@ -22,6 +22,7 @@ import portfolioController from './controllers/portfolioController.js';
 import authController from './controllers/authController.js';
 import userController from './controllers/userController.js';
 import pdfController from './controllers/pdfController.js';
+import settingsController from './controllers/settingsController.js';
 import swaggerDocument from './api/swagger.js';
 
 // Import error handling middleware
@@ -71,6 +72,7 @@ app.use('/api/contact', contactController);
 app.use('/api/auth', authController);
 app.use('/api/admin/users', userController);
 app.use('/api/admin/pdfs', pdfController);
+app.use('/api/settings', settingsController);
 
 // Placeholder image endpoint
 app.get('/api/placeholder/:width/:height', (req, res) => {

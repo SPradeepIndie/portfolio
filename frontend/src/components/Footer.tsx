@@ -30,7 +30,8 @@ import {
   Send,
   Close,
 } from '@mui/icons-material'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { apiService } from '../services/api'
 
 interface ContactInfo {
   email: string
@@ -46,11 +47,11 @@ interface EmailForm {
   message: string
 }
 
-const contactInfo: ContactInfo = {
-  email: 'sanjayapradeepnet@example.com',
-  phone: '+94 76 158 0881',
-  linkedin: 'www.linkedin.com/in/sanjaya-pradeep',
-  github: 'https://github.com/SPradeepIndie',
+const defaultContactInfo: ContactInfo = {
+  email: 'sanjayapadeepnet@gmail.com',
+  phone: '',
+  linkedin: '',
+  github: '',
 }
 
 export const Footer = () => {
@@ -63,6 +64,20 @@ export const Footer = () => {
     subject: '',
     message: '',
   })
+  const [contactInfo, setContactInfo] = useState<ContactInfo>(defaultContactInfo)
+
+  useEffect(() => {
+    apiService.getPortfolio().then(data => {
+      if (data?.contact) {
+        setContactInfo({
+          email: data.contact.email || defaultContactInfo.email,
+          phone: data.contact.phone || '',
+          linkedin: data.contact.linkedin || '',
+          github: data.contact.github || '',
+        })
+      }
+    }).catch(console.error)
+  }, [])
 
   const handleEmailDialogOpen = () => setEmailDialogOpen(true)
   const handleEmailDialogClose = () => {

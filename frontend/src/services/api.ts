@@ -120,8 +120,9 @@ export interface Project {
   category: string;
   featured: boolean;
   createdAt: string;
-  status: 'Completed' | 'In Progress' | 'Planning';
+  status: 'Completed' | 'In Progress' | 'Planning' | 'Initiated';
   timeline?: TimelineEvent[];
+  is_hidden?: boolean;
 }
 
 export interface Blog {
@@ -140,6 +141,7 @@ export interface Blog {
   likes: number;
   pdf_path?: string;
   pdf_url?: string;
+  is_hidden?: boolean;
 }
 
 export interface ApiResponse<T> {
@@ -155,6 +157,12 @@ export interface PortfolioData {
   skills: string[];
   experience: number;
   location: string;
+  contact?: {
+    email?: string;
+    phone?: string;
+    linkedin?: string;
+    github?: string;
+  };
 }
 
 export interface AuthUser {
@@ -166,6 +174,9 @@ export interface AuthUser {
   created_at: string;
   updated_at: string;
   last_login_at: string | null;
+  phone_number?: string;
+  github_link?: string;
+  linkedin_address?: string;
 }
 
 export interface AuthSession {
@@ -453,6 +464,26 @@ export const apiService = {
       throw new Error(getErrorMessage(error, 'Failed to delete PDF'));
     }
   },
+
+  // Settings
+  async getSettings() {
+    const response = await api.get('/api/settings');
+    return response.data.data;
+  },
+  async createCategory(payload: { name: string, entity_type: string }) {
+    const response = await api.post('/api/settings/categories', payload);
+    return response.data.data;
+  },
+  async deleteCategory(id: number) {
+    await api.delete(`/api/settings/categories/${id}`);
+  },
+  async createTag(payload: { name: string, entity_type: string }) {
+    const response = await api.post('/api/settings/tags', payload);
+    return response.data.data;
+  },
+  async deleteTag(id: number) {
+    await api.delete(`/api/settings/tags/${id}`);
+  }
 };
 
 export default api;

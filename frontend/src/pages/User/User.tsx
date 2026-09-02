@@ -25,6 +25,9 @@ export const UserPage = () => {
   const { user, logout, refreshSession, updateProfile, isLoading } = useAuth()
   const [fullName, setFullName] = useState(user?.full_name ?? '')
   const [email, setEmail] = useState(user?.email ?? '')
+  const [phoneNumber, setPhoneNumber] = useState(user?.phone_number ?? '')
+  const [githubLink, setGithubLink] = useState(user?.github_link ?? '')
+  const [linkedinAddress, setLinkedinAddress] = useState(user?.linkedin_address ?? '')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -34,6 +37,9 @@ export const UserPage = () => {
   useEffect(() => {
     setFullName(user?.full_name ?? '')
     setEmail(user?.email ?? '')
+    setPhoneNumber(user?.phone_number ?? '')
+    setGithubLink(user?.github_link ?? '')
+    setLinkedinAddress(user?.linkedin_address ?? '')
   }, [user])
 
   const handleSave = async () => {
@@ -45,6 +51,9 @@ export const UserPage = () => {
       await updateProfile({
         full_name: fullName,
         email,
+        phone_number: phoneNumber,
+        github_link: githubLink,
+        linkedin_address: linkedinAddress,
         ...(password ? { password } : {}),
       })
       setPassword('')
@@ -189,6 +198,27 @@ export const UserPage = () => {
                 label="Email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
+                fullWidth
+                variant="outlined"
+              />
+              <TextField
+                label="Phone Number"
+                value={phoneNumber}
+                onChange={(event) => setPhoneNumber(event.target.value)}
+                fullWidth
+                variant="outlined"
+              />
+              <TextField
+                label="GitHub Link"
+                value={githubLink}
+                onChange={(event) => setGithubLink(event.target.value)}
+                fullWidth
+                variant="outlined"
+              />
+              <TextField
+                label="LinkedIn Address"
+                value={linkedinAddress}
+                onChange={(event) => setLinkedinAddress(event.target.value)}
                 fullWidth
                 variant="outlined"
               />

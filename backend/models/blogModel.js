@@ -60,13 +60,14 @@ export const blogModel = {
       featured,
       image,
       category,
+      is_hidden = false,
     } = blogData;
 
     const result = await query(
-      `INSERT INTO blogs (title, excerpt, content, pdf_path, author, read_time, tags, featured, image, category)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO blogs (title, excerpt, content, pdf_path, author, read_time, tags, featured, image, category, is_hidden)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
-      [title, excerpt, content, pdf_path, author, read_time, tags, featured, image, category]
+      [title, excerpt, content, pdf_path, author, read_time, tags, featured, image, category, is_hidden]
     );
     return result.rows[0];
   },
@@ -84,16 +85,17 @@ export const blogModel = {
       featured,
       image,
       category,
+      is_hidden = false,
     } = blogData;
 
     const result = await query(
       `UPDATE blogs 
        SET title = $1, excerpt = $2, content = $3, pdf_path = $4, author = $5,
            read_time = $6, tags = $7, featured = $8, image = $9, category = $10,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $11
+           is_hidden = $11, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $12
        RETURNING *`,
-      [title, excerpt, content, pdf_path, author, read_time, tags, featured, image, category, id]
+      [title, excerpt, content, pdf_path, author, read_time, tags, featured, image, category, is_hidden, id]
     );
     return result.rows[0];
   },

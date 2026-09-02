@@ -13,7 +13,7 @@ export const userModel = {
     const result = await query(
       `INSERT INTO users (full_name, email, password_hash, role)
        VALUES ($1, $2, $3, $4)
-       RETURNING id, full_name, email, role, is_active, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, is_active, created_at, updated_at, last_login_at, phone_number, github_link, linkedin_address`,
       [full_name, email, password_hash, role]
     );
 
@@ -22,7 +22,7 @@ export const userModel = {
 
   getAll: async () => {
     const result = await query(
-      `SELECT id, full_name, email, role, is_active, created_at, updated_at, last_login_at
+      `SELECT id, full_name, email, role, is_active, created_at, updated_at, last_login_at, phone_number, github_link, linkedin_address
        FROM users
        ORDER BY created_at DESC`
     );
@@ -32,7 +32,7 @@ export const userModel = {
 
   getById: async (id) => {
     const result = await query(
-      `SELECT id, full_name, email, role, is_active, created_at, updated_at, last_login_at
+      `SELECT id, full_name, email, role, is_active, created_at, updated_at, last_login_at, phone_number, github_link, linkedin_address
        FROM users
        WHERE id = $1`,
       [id]
@@ -43,7 +43,7 @@ export const userModel = {
 
   getByEmail: async (email) => {
     const result = await query(
-      `SELECT id, full_name, email, password_hash, role, is_active, created_at, updated_at, last_login_at
+      `SELECT id, full_name, email, password_hash, role, is_active, created_at, updated_at, last_login_at, phone_number, github_link, linkedin_address
        FROM users
        WHERE email = $1`,
       [email]
@@ -82,6 +82,21 @@ export const userModel = {
       values.push(updateData.is_active);
     }
 
+    if (typeof updateData.phone_number !== 'undefined') {
+      fields.push(`phone_number = $${index++}`);
+      values.push(updateData.phone_number);
+    }
+
+    if (typeof updateData.github_link !== 'undefined') {
+      fields.push(`github_link = $${index++}`);
+      values.push(updateData.github_link);
+    }
+
+    if (typeof updateData.linkedin_address !== 'undefined') {
+      fields.push(`linkedin_address = $${index++}`);
+      values.push(updateData.linkedin_address);
+    }
+
     if (!fields.length) {
       return userModel.getById(id);
     }
@@ -94,7 +109,7 @@ export const userModel = {
       `UPDATE users
        SET ${fields.join(', ')}
        WHERE id = $${index}
-       RETURNING id, full_name, email, role, is_active, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, is_active, created_at, updated_at, last_login_at, phone_number, github_link, linkedin_address`,
       values
     );
 
@@ -117,7 +132,7 @@ export const userModel = {
        SET is_active = false,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $1
-       RETURNING id, full_name, email, role, is_active, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, is_active, created_at, updated_at, last_login_at, phone_number, github_link, linkedin_address`,
       [id]
     );
 

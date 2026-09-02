@@ -59,19 +59,41 @@ export const HomePage = () => {
           maxWidth: 'md',
           mx: 'auto',
           width: '100%',
-          mb: { xs: 6, md: 8 }
+          mb: { xs: 8, md: 12 },
+          mt: { xs: 4, md: 8 },
+          position: 'relative'
         }}
       >
-        <Typography variant="h2" component="h1" gutterBottom color="primary"
+        {/* Glow effect behind text */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '120%',
+            height: '150%',
+            background: 'radial-gradient(circle, rgba(0,242,254,0.15) 0%, rgba(139,92,246,0.1) 40%, rgba(0,0,0,0) 70%)',
+            zIndex: -1,
+            pointerEvents: 'none',
+          }}
+        />
+
+        <Typography variant="h2" component="h1" gutterBottom
           sx={{
             fontSize: { 
-              xs: '2rem', 
-              sm: '2.5rem', 
-              md: '3rem', 
-              lg: '3.5rem' 
+              xs: '2.5rem', 
+              sm: '3.5rem', 
+              md: '4rem', 
+              lg: '4.5rem' 
             },
-            fontWeight: { xs: 600, md: 700 },
-            mb: { xs: 2, md: 3 }
+            fontWeight: 800,
+            mb: { xs: 2, md: 3 },
+            background: (theme) => `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            display: 'inline-block',
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
           }}
         >
           Welcome to My Portfolio
@@ -84,22 +106,25 @@ export const HomePage = () => {
               md: '1.75rem' 
             },
             mb: { xs: 3, md: 4 },
-            fontWeight: { xs: 400, md: 500 }
+            fontWeight: 500,
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
+            color: 'text.secondary',
           }}
         >
           Life Time Learner
         </Typography>
         <Typography variant="body1" color="text.secondary"
           sx={{
-            fontSize: { xs: '1rem', md: '1.125rem' },
-            lineHeight: { xs: 1.6, md: 1.7 },
+            fontSize: { xs: '1.1rem', md: '1.25rem' },
+            lineHeight: 1.8,
             maxWidth: { xs: '100%', sm: '80%', md: '70%' },
             mx: 'auto',
             px: { xs: 1, sm: 2 },
-            mb: 4
+            mb: 5
           }}
         >
-          Explore my projects, read my blogs, and get in touch!
+          Explore my projects, read my blogs, and get in touch! Crafting modern web experiences with passion and precision.
         </Typography>
 
         <Stack

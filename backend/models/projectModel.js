@@ -51,13 +51,16 @@ export const projectModel = {
       featured,
       status,
       timeline,
+      is_hidden = false,
     } = projectData;
 
+    const timelineStr = typeof timeline === 'object' ? JSON.stringify(timeline) : (timeline || '[]');
+
     const result = await query(
-      `INSERT INTO projects (title, description, technologies, github, demo, image, category, featured, status, timeline)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO projects (title, description, technologies, github, demo, image, category, featured, status, timeline, is_hidden)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
-      [title, description, technologies, github, demo, image, category, featured, status, timeline]
+      [title, description, technologies, github, demo, image, category, featured, status, timelineStr, is_hidden]
     );
     return result.rows[0];
   },
@@ -75,16 +78,19 @@ export const projectModel = {
       featured,
       status,
       timeline,
+      is_hidden = false,
     } = projectData;
+
+    const timelineStr = typeof timeline === 'object' ? JSON.stringify(timeline) : (timeline || '[]');
 
     const result = await query(
       `UPDATE projects 
        SET title = $1, description = $2, technologies = $3, github = $4, 
            demo = $5, image = $6, category = $7, featured = $8, status = $9,
-           timeline = $10, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $11
+           timeline = $10, is_hidden = $11, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $12
        RETURNING *`,
-      [title, description, technologies, github, demo, image, category, featured, status, timeline, id]
+      [title, description, technologies, github, demo, image, category, featured, status, timelineStr, is_hidden, id]
     );
     return result.rows[0];
   },
