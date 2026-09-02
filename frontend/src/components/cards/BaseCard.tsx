@@ -89,7 +89,7 @@ function BaseCard({
 
       {header}
 
-      {image && (
+      {image && image.trim() !== '' && image !== 'null' && image !== 'undefined' && (
         <CardMedia
           component="img"
           height={imageHeight}

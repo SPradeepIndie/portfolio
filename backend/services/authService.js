@@ -64,6 +64,9 @@ const sanitizeUser = (user) => ({
   email: user.email,
   role: user.role,
   is_active: user.is_active,
+  phone_number: user.phone_number,
+  github_link: user.github_link,
+  linkedin_address: user.linkedin_address,
   created_at: user.created_at,
   updated_at: user.updated_at,
   last_login_at: user.last_login_at,
@@ -256,6 +259,16 @@ export const updateMe = asyncHandler(async (req, res) => {
     }
 
     updateData.password_hash = await bcrypt.hash(req.body.password, 12);
+  }
+
+  if (typeof req.body.phone_number !== 'undefined') {
+    updateData.phone_number = req.body.phone_number;
+  }
+  if (typeof req.body.github_link !== 'undefined') {
+    updateData.github_link = req.body.github_link;
+  }
+  if (typeof req.body.linkedin_address !== 'undefined') {
+    updateData.linkedin_address = req.body.linkedin_address;
   }
 
   const updatedUser = await userModel.updateById(req.user.id, updateData);

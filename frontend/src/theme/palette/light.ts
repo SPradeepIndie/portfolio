@@ -9,19 +9,19 @@ import type { PaletteOptions } from '@mui/material/styles'
 export const lightPalette: PaletteOptions = {
   mode: 'light',
   primary: {
-    main: '#2563eb', // Blue primary
-    light: '#60a5fa',
-    dark: '#1d4ed8',
+    main: '#0ea5e9', // Vibrant Sky blue
+    light: '#38bdf8',
+    dark: '#0284c7',
     contrastText: '#ffffff',
   },
   secondary: {
-    main: '#ec4899', // Pink secondary for contrast
-    light: '#f472b6',
-    dark: '#be185d',
+    main: '#8b5cf6', // Violet
+    light: '#a78bfa',
+    dark: '#6d28d9',
     contrastText: '#ffffff',
   },
   background: {
-    default: '#fafafa',
+    default: '#f8fafc',
     paper: '#ffffff',
   },
   text: {

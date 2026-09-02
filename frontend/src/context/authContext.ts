@@ -11,7 +11,7 @@ export interface AuthContextType {
   register: (fullName: string, email: string, password: string) => Promise<void>
   logout: () => Promise<void>
   refreshSession: () => Promise<boolean>
-  updateProfile: (payload: { full_name?: string; email?: string; password?: string }) => Promise<void>
+  updateProfile: (payload: { full_name?: string; email?: string; password?: string; phone_number?: string; github_link?: string; linkedin_address?: string }) => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined)

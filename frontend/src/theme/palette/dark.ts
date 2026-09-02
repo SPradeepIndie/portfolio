@@ -10,24 +10,24 @@ import type { PaletteOptions } from '@mui/material/styles'
 export const darkPalette: PaletteOptions = {
   mode: 'dark',
   primary: {
-    main: '#3b82f6', // Blue primary in dark
-    light: '#60a5fa',
-    dark: '#1d4ed8',
-    contrastText: '#ffffff',
+    main: '#00f2fe', // Neon cyan
+    light: '#4facfe',
+    dark: '#00a8cc',
+    contrastText: '#000000',
   },
   secondary: {
-    main: '#f472b6', // Pink secondary for contrast
-    light: '#fbbf24',
-    dark: '#ec4899',
-    contrastText: '#000000', // High contrast black text on pink
+    main: '#a855f7', // Purple
+    light: '#d8b4fe',
+    dark: '#7e22ce',
+    contrastText: '#ffffff',
   },
   background: {
-    default: '#0f172a', // Very dark blue-gray
-    paper: '#1e293b', // Slightly lighter for cards/papers
+    default: '#050505',
+    paper: '#121212',
   },
   text: {
-    primary: '#f8fafc', // High contrast white for readability
-    secondary: '#cbd5e0', // Slightly muted for secondary text
+    primary: '#f8fafc',
+    secondary: '#94a3b8',
   },
   grey: {
     100: '#1e293b',

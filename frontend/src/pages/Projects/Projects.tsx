@@ -49,14 +49,23 @@ export const ProjectsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [tabValue, setTabValue] = useState(0);
 
-  const categories = ['All', 'Featured', 'Full Stack', 'Frontend', 'Backend', 'Web App', 'Data Visualization'];
+  const [categories, setCategories] = useState<string[]>(['All', 'Featured']);
 
   const fetchProjects = async () => {
     try {
       setLoading(true);
       setError(null);
-      const projectData = await apiService.getProjects();
+      const [projectData, settingsData] = await Promise.all([
+        apiService.getProjects(),
+        apiService.getSettings().catch(() => ({ categories: [] }))
+      ]);
       setProjects(projectData);
+      
+      const dynamicCategories = (settingsData.categories || [])
+        .filter((c: { name: string; entity_type: string }) => c.entity_type === 'project')
+        .map((c: { name: string; entity_type: string }) => c.name);
+        
+      setCategories(Array.from(new Set(['All', 'Featured', ...dynamicCategories])));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load projects');
     } finally {

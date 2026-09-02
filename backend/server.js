@@ -22,10 +22,14 @@ import portfolioController from './controllers/portfolioController.js';
 import authController from './controllers/authController.js';
 import userController from './controllers/userController.js';
 import pdfController from './controllers/pdfController.js';
+import settingsController from './controllers/settingsController.js';
 import swaggerDocument from './api/swagger.js';
 
 // Import error handling middleware
 import { errorHandler, notFound } from './middleware/errorHandler.js';
+
+// Import rate limiters
+import { globalLimiter, authLimiter } from './middleware/rateLimiter.js';
 
 dotenv.config();
 
@@ -34,6 +38,9 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Trust the first proxy (e.g. Nginx or Azure Container Apps) so rate limiting works accurately
+app.set('trust proxy', 1);
 
 // Middleware
 app.use(helmet());
@@ -59,6 +66,9 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Apply global rate limiter to all /api routes
+app.use('/api', globalLimiter);
+
 // API Routes
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.get('/api/docs-json', (req, res) => {
@@ -68,9 +78,10 @@ app.use('/api/portfolio', portfolioController);
 app.use('/api/projects', projectController);
 app.use('/api/blogs', blogController);
 app.use('/api/contact', contactController);
-app.use('/api/auth', authController);
+app.use('/api/auth', authLimiter, authController);
 app.use('/api/admin/users', userController);
 app.use('/api/admin/pdfs', pdfController);
+app.use('/api/settings', settingsController);
 
 // Placeholder image endpoint
 app.get('/api/placeholder/:width/:height', (req, res) => {

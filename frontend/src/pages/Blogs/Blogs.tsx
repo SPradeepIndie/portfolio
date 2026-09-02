@@ -57,23 +57,23 @@ export const BlogsPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const categories = [
-    'All',
-    'Featured', 
-    'Frontend Development',
-    'Backend Development',
-    'Programming Languages',
-    'Database',
-    'Web Design',
-    'DevOps'
-  ];
+  const [categories, setCategories] = useState<string[]>(['All', 'Featured']);
 
   const fetchBlogs = async () => {
     try {
       setLoading(true);
       setError(null);
-      const blogData = await apiService.getBlogs();
+      const [blogData, settingsData] = await Promise.all([
+        apiService.getBlogs(),
+        apiService.getSettings().catch(() => ({ categories: [] }))
+      ]);
       setBlogs(blogData);
+      
+      const dynamicCategories = (settingsData.categories || [])
+        .filter((c: { name: string; entity_type: string }) => c.entity_type === 'blog')
+        .map((c: { name: string; entity_type: string }) => c.name);
+        
+      setCategories(Array.from(new Set(['All', 'Featured', ...dynamicCategories])));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load blogs');
     } finally {
