@@ -43,8 +43,8 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
       const data = await apiService.getSettings();
       setCategories(data.categories || []);
       setTags(data.tags || []);
-    } catch (e: any) {
-      setError(e.message || 'Failed to load settings');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load settings');
     }
   };
 
@@ -59,8 +59,8 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
       setMessage('Added successfully');
       setNewItem({ ...newItem, name: '' });
       loadSettings();
-    } catch (e: any) {
-      setError(e.message || 'Failed to add item');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to add item');
     }
   };
 
@@ -68,8 +68,8 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
     try {
       await apiService.deleteCategory(id);
       loadSettings();
-    } catch (e: any) {
-      setError(e.message || 'Failed to delete category');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to delete category');
     }
   };
 
@@ -77,8 +77,8 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
     try {
       await apiService.deleteTag(id);
       loadSettings();
-    } catch (e: any) {
-      setError(e.message || 'Failed to delete tag');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to delete tag');
     }
   };
 

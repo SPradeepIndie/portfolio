@@ -62,8 +62,8 @@ export const ProjectsPage: React.FC = () => {
       setProjects(projectData);
       
       const dynamicCategories = (settingsData.categories || [])
-        .filter((c: any) => c.entity_type === 'project')
-        .map((c: any) => c.name);
+        .filter((c: { name: string; entity_type: string }) => c.entity_type === 'project')
+        .map((c: { name: string; entity_type: string }) => c.name);
         
       setCategories(Array.from(new Set(['All', 'Featured', ...dynamicCategories])));
     } catch (err) {

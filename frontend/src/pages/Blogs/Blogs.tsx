@@ -70,8 +70,8 @@ export const BlogsPage: React.FC = () => {
       setBlogs(blogData);
       
       const dynamicCategories = (settingsData.categories || [])
-        .filter((c: any) => c.entity_type === 'blog')
-        .map((c: any) => c.name);
+        .filter((c: { name: string; entity_type: string }) => c.entity_type === 'blog')
+        .map((c: { name: string; entity_type: string }) => c.name);
         
       setCategories(Array.from(new Set(['All', 'Featured', ...dynamicCategories])));
     } catch (err) {
