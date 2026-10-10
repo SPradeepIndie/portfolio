@@ -50,6 +50,9 @@ on:
         required: false
         default: ''
 
+permissions:
+  contents: read
+
 jobs:
   validate-azure-credentials:
     name: Validate Azure credentials
