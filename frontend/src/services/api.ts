@@ -6,9 +6,9 @@
 import axios from 'axios';
 import { clearAuthTokens, getAccessToken, getRefreshToken, saveAuthTokens } from './authStorage';
 
-const apiBaseURL = import.meta.env.PROD
+const apiBaseURL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD
   ? ''
-  : 'http://localhost:5000';
+  : 'http://localhost:5000');
 
 // Create axios instance with base configuration
 const api = axios.create({

@@ -1,10 +1,33 @@
+# ==============================================================================
+# WORKFLOW: Database Migration
+# ==============================================================================
+# Responsibility:
+#   - Applies pending PostgreSQL database migrations using db-migrate.
+#   - Populates database.json with environment configuration via substitute-env.js.
+#   - Compatible with any PostgreSQL target (Neon Serverless DB or Azure PostgreSQL).
+#
+# Prerequisites:
+#   - Secret: DB_PASSWORD
+#   - Variables: DB_HOST, DB_PORT, DB_NAME, DB_USER
+#
+# Workflow Dependencies (What should run first):
+#   - None. Can be run standalone or invoked by cd-orchestrator.yml.
+#
+# Triggers:
+#   - Manual: workflow_dispatch in GitHub Actions UI.
+#   - Callable: workflow_call (invoked by cd-orchestrator.yml).
+#   - Does NOT run automatically on git push.
+# ==============================================================================
+
 name: Database Migration
 
+
 on:
+  workflow_dispatch:
   workflow_call:
     secrets:
       DB_PASSWORD:
-        required: true
+        required: false
 
 jobs:
   migrate:

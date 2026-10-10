@@ -1,4 +1,24 @@
+# ==============================================================================
+# WORKFLOW: Frontend CI / CD (Reusable)
+# ==============================================================================
+# Responsibility:
+#   - Job 'validate': Installs dependencies, runs ESLint (npm run lint), and builds Vite SPA.
+#   - Job 'build-and-push': Builds frontend Nginx Docker container and pushes to ACR (conditional).
+#
+# Prerequisites:
+#   - For validation: None (Node.js runtime only).
+#   - For Docker push: Secret AZURE_CREDENTIALS, Inputs: acr_name, acr_login_server,
+#     image_tag, image_repository.
+#
+# Workflow Dependencies (What should run first):
+#   - Invoked as a child workflow by ci-orchestrator.yml or cd-orchestrator.yml.
+#
+# Triggers:
+#   - Reusable workflow only (workflow_call).
+# ==============================================================================
+
 name: Frontend CI
+
 
 on:
   workflow_call:

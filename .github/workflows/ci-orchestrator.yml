@@ -1,49 +1,44 @@
+# ==============================================================================
+# WORKFLOW: CI Orchestrator
+# ==============================================================================
+# Responsibility:
+#   - Validates frontend and backend codebase integrity for pull requests.
+#   - Runs backend unit checks and frontend linting/typecheck/Vite build.
+#   - Ensures status checks pass before PRs can be merged into 'main'.
+#
+# Prerequisites:
+#   - Standard GitHub Actions Ubuntu runner (no cloud credentials or secrets needed).
+#
+# Workflow Dependencies (What should run first):
+#   - None. This is the entrypoint for PR validation.
+#   - Invokes: backend.yml and frontend.yml with push_image=false.
+#
+# Triggers:
+#   - Automatic on: pull_request to 'main'.
+#   - Cannot be run manually or by other workflows.
+# ==============================================================================
+
 name: CI Orchestrator
+
 
 on:
   pull_request:
     branches:
       - main
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-  push:
-    branches:
-      - main
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-  workflow_dispatch:
-    inputs:
-      push_to_acr:
-        description: 'Build and push frontend/backend images to ACR'
-        type: boolean
-        required: false
-        default: false
-      tag:
-        description: 'Optional image tag to use instead of git sha'
-        required: false
-        default: ''
 
 jobs:
   backend:
     name: Backend pipeline
     uses: ./.github/workflows/backend.yml
     with:
-      push_image: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.event.inputs.push_to_acr == 'true') }}
-      image_tag: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '' && github.event.inputs.tag || github.sha }}
-      acr_name: ${{ vars.ACR_NAME }}
-      acr_login_server: ${{ vars.ACR_LOGIN_SERVER }}
-      image_repository: portfolio-backend
+      push_image: false
+      image_tag: ${{ github.sha }}
     secrets: inherit
 
   frontend:
     name: Frontend pipeline
     uses: ./.github/workflows/frontend.yml
     with:
-      push_image: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.event.inputs.push_to_acr == 'true') }}
-      image_tag: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '' && github.event.inputs.tag || github.sha }}
-      acr_name: ${{ vars.ACR_NAME }}
-      acr_login_server: ${{ vars.ACR_LOGIN_SERVER }}
-      image_repository: portfolio-frontend
+      push_image: false
+      image_tag: ${{ github.sha }}
     secrets: inherit

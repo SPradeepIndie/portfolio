@@ -58,8 +58,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Health check route
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     message: 'Portfolio API is running',
     timestamp: new Date().toISOString(),
     version: '1.0.0'
@@ -86,7 +86,7 @@ app.use('/api/settings', settingsController);
 // Placeholder image endpoint
 app.get('/api/placeholder/:width/:height', (req, res) => {
   const { width, height } = req.params;
-  
+
   const svg = `
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
       <rect width="100%" height="100%" fill="#f0f2f5"/>
@@ -96,7 +96,7 @@ app.get('/api/placeholder/:width/:height', (req, res) => {
       </text>
     </svg>
   `;
-  
+
   res.setHeader('Content-Type', 'image/svg+xml');
   res.setHeader('Cache-Control', 'public, max-age=31536000');
   res.send(svg);
@@ -108,9 +108,17 @@ app.use(notFound);
 // Error handling middleware - must be last
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📖 API Health: http://localhost:${PORT}/api/health`);
-  console.log(`📝 Portfolio Data: http://localhost:${PORT}/api/portfolio`);
-  console.log(`📚 Swagger Docs: http://localhost:${PORT}/api/docs`);
-});
+// Handle whether we are in Vercel or the Local.
+// If we are in local we run and listne to the port 5000.
+// If we are in vercel we export the app.
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📖 API Health: http://localhost:${PORT}/api/health`);
+    console.log(`📝 Portfolio Data: http://localhost:${PORT}/api/portfolio`);
+    console.log(`📚 Swagger Docs: http://localhost:${PORT}/api/docs`);
+  });
+}
+
+export default app;
+
