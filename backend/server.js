@@ -108,9 +108,14 @@ app.use(notFound);
 // Error handling middleware - must be last
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📖 API Health: http://localhost:${PORT}/api/health`);
-  console.log(`📝 Portfolio Data: http://localhost:${PORT}/api/portfolio`);
-  console.log(`📚 Swagger Docs: http://localhost:${PORT}/api/docs`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📖 API Health: http://localhost:${PORT}/api/health`);
+    console.log(`📝 Portfolio Data: http://localhost:${PORT}/api/portfolio`);
+    console.log(`📚 Swagger Docs: http://localhost:${PORT}/api/docs`);
+  });
+}
+
+export default app;
+
