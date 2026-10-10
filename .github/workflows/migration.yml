@@ -29,6 +29,9 @@ on:
       DB_PASSWORD:
         required: false
 
+permissions:
+  contents: read
+
 jobs:
   migrate:
     name: Run backend migrations
