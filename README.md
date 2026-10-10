@@ -204,6 +204,16 @@ docker stats
 docker system df
 ```
 
+## 🚀 Vercel Deployment Configuration (`vercel.json`)
+
+`vercel.json` coordinates the full-stack deployment on Vercel:
+
+- **`buildCommand`**: Runs `npm --prefix frontend install && npm --prefix frontend run build` to compile the Vite React frontend into `frontend/dist`.
+- **`outputDirectory`**: Points to `frontend/dist` so Vercel serves the static assets over its global CDN.
+- **`rewrites`**:
+  - `{"source": "/api/(.*)", "destination": "/api"}`: Routes all API traffic to the serverless Express function in `api/index.js`.
+  - `{"source": "/(.*)", "destination": "/index.html"}`: Routes all frontend page navigation to React Router's single-page app shell.
+
 ## 📄 License
 
 Apache License Version 2.0, January 2004

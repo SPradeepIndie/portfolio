@@ -1,13 +1,33 @@
+# ==============================================================================
+# WORKFLOW: CD Orchestrator (Azure Deployment)
+# ==============================================================================
+# Responsibility:
+#   - Full-stack manual deployment to Microsoft Azure.
+#   - Provisions / validates Azure Log Analytics and Container Apps environments.
+#   - Triggers Docker image build & push to Azure Container Registry (ACR).
+#   - Optionally runs database migrations against Azure PostgreSQL / Neon.
+#   - Deploys and updates Azure Container Apps for backend and frontend.
+#
+# Prerequisites:
+#   - Secrets: AZURE_CREDENTIALS, ACR_PASSWORD, DB_PASSWORD, AZURE_STORAGE_CONNECTION_STRING
+#   - Variables: AZURE_RESOURCE_GROUP, AZURE_LOG_WORKSPACE_NAME,
+#                AZURE_CONTAINER_APPS_ENVIRONMENT, ACR_NAME, ACR_LOGIN_SERVER,
+#                DB_HOST, DB_PORT, DB_NAME, DB_USER, AZURE_BLOB_CONTAINER_NAME
+#
+# Workflow Dependencies (What should run first):
+#   - ci-orchestrator.yml should have passed on the PR before merging and deploying.
+#   - Invokes: backend.yml (push_image=true), frontend.yml (push_image=true),
+#              and migration.yml (if run_migrations=true).
+#
+# Triggers:
+#   - 100% Manual via workflow_dispatch in the GitHub Actions UI.
+#   - Inputs: run_migrations (bool), deploy_backend (bool), deploy_frontend (bool), tag (string).
+# ==============================================================================
+
 name: CD Orchestrator
 
+
 on:
-  workflow_run:
-    workflows:
-      - CI Orchestrator
-    types:
-      - completed
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       run_migrations:
@@ -19,12 +39,12 @@ on:
         description: 'Deploy backend container app'
         type: boolean
         required: false
-        default: false
+        default: true
       deploy_frontend:
         description: 'Deploy frontend container app'
         type: boolean
         required: false
-        default: false
+        default: true
       tag:
         description: 'Image tag to use when pushing/deploying (optional, defaults to github.sha)'
         required: false
@@ -33,7 +53,7 @@ on:
 jobs:
   validate-azure-credentials:
     name: Validate Azure credentials
-    if: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || (github.event_name == 'workflow_dispatch' && (github.event.inputs.run_migrations == 'true' || github.event.inputs.deploy_backend == 'true' || github.event.inputs.deploy_frontend == 'true')) }}
+    if: ${{ github.event.inputs.run_migrations == 'true' || github.event.inputs.deploy_backend == 'true' || github.event.inputs.deploy_frontend == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -89,17 +109,47 @@ jobs:
 
   migrations:
     name: Run database migrations
-    if: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || (github.event_name == 'workflow_dispatch' && github.event.inputs.run_migrations == 'true') }}
+    if: ${{ github.event.inputs.run_migrations == 'true' }}
     needs:
       - validate-azure-credentials
     uses: ./.github/workflows/migration.yml
     secrets: inherit
 
+  build-backend:
+    name: Build and push backend image
+    if: ${{ github.event.inputs.deploy_backend == 'true' || github.event.inputs.deploy_frontend == 'true' }}
+    needs:
+      - validate-azure-credentials
+    uses: ./.github/workflows/backend.yml
+    with:
+      push_image: true
+      image_tag: ${{ github.event.inputs.tag != '' && github.event.inputs.tag || github.sha }}
+      acr_name: ${{ vars.ACR_NAME }}
+      acr_login_server: ${{ vars.ACR_LOGIN_SERVER }}
+      image_repository: portfolio-backend
+    secrets: inherit
+
+  build-frontend:
+    name: Build and push frontend image
+    if: ${{ github.event.inputs.deploy_frontend == 'true' }}
+    needs:
+      - validate-azure-credentials
+    uses: ./.github/workflows/frontend.yml
+    with:
+      push_image: true
+      image_tag: ${{ github.event.inputs.tag != '' && github.event.inputs.tag || github.sha }}
+      acr_name: ${{ vars.ACR_NAME }}
+      acr_login_server: ${{ vars.ACR_LOGIN_SERVER }}
+      image_repository: portfolio-frontend
+    secrets: inherit
+
   deploy-backend:
     name: Deploy backend container app
-    if: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || (github.event_name == 'workflow_dispatch' && (github.event.inputs.deploy_backend == 'true' || github.event.inputs.deploy_frontend == 'true')) }}
     needs:
+      - validate-azure-credentials
+      - build-backend
       - migrations
+    if: ${{ !cancelled() && needs.build-backend.result == 'success' && (needs.migrations.result == 'success' || needs.migrations.result == 'skipped') && (github.event.inputs.deploy_backend == 'true' || github.event.inputs.deploy_frontend == 'true') }}
     runs-on: ubuntu-latest
     outputs:
       backend_fqdn: ${{ steps.get-backend-fqdn.outputs.backend_fqdn }}
@@ -122,7 +172,7 @@ jobs:
           set -e
           mkdir -p "$RUNNER_TEMP/container-apps"
           export CONTAINER_APP_ENVIRONMENT_ID="$CONTAINER_APP_ENVIRONMENT_ID"
-          export REGISTRY_IMAGE="${{ vars.ACR_LOGIN_SERVER }}/portfolio-backend:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event.inputs.tag || github.sha }}"
+          export REGISTRY_IMAGE="${{ vars.ACR_LOGIN_SERVER }}/portfolio-backend:${{ github.event.inputs.tag || github.sha }}"
           export ACR_LOGIN_SERVER="${{ vars.ACR_LOGIN_SERVER }}"
           export ACR_USERNAME="${{ vars.ACR_USERNAME }}"
           export ACR_PASSWORD="${{ secrets.ACR_PASSWORD }}"
@@ -140,7 +190,7 @@ jobs:
         with:
           acrUsername: ${{ vars.ACR_USERNAME }}
           acrPassword: ${{ secrets.ACR_PASSWORD }}
-          imageToDeploy: ${{ vars.ACR_LOGIN_SERVER }}/portfolio-backend:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event.inputs.tag || github.sha }}
+          imageToDeploy: ${{ vars.ACR_LOGIN_SERVER }}/portfolio-backend:${{ github.event.inputs.tag || github.sha }}
           containerAppName: backend
           resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
           containerAppEnvironment: ${{ vars.AZURE_CONTAINER_APPS_ENVIRONMENT }}
@@ -155,8 +205,10 @@ jobs:
 
   deploy-frontend:
     name: Deploy frontend container app
-    if: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_frontend == 'true') }}
+    if: ${{ github.event.inputs.deploy_frontend == 'true' }}
     needs:
+      - validate-azure-credentials
+      - build-frontend
       - deploy-backend
     runs-on: ubuntu-latest
 
@@ -178,7 +230,7 @@ jobs:
           set -e
           mkdir -p "$RUNNER_TEMP/container-apps"
           export CONTAINER_APP_ENVIRONMENT_ID="$CONTAINER_APP_ENVIRONMENT_ID"
-          export REGISTRY_IMAGE="${{ vars.ACR_LOGIN_SERVER }}/portfolio-frontend:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event.inputs.tag || github.sha }}"
+          export REGISTRY_IMAGE="${{ vars.ACR_LOGIN_SERVER }}/portfolio-frontend:${{ github.event.inputs.tag || github.sha }}"
           export ACR_LOGIN_SERVER="${{ vars.ACR_LOGIN_SERVER }}"
           export ACR_USERNAME="${{ vars.ACR_USERNAME }}"
           export ACR_PASSWORD="${{ secrets.ACR_PASSWORD }}"
@@ -191,9 +243,8 @@ jobs:
         with:
           acrUsername: ${{ vars.ACR_USERNAME }}
           acrPassword: ${{ secrets.ACR_PASSWORD }}
-          imageToDeploy: ${{ vars.ACR_LOGIN_SERVER }}/portfolio-frontend:${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event.inputs.tag || github.sha }}
+          imageToDeploy: ${{ vars.ACR_LOGIN_SERVER }}/portfolio-frontend:${{ github.event.inputs.tag || github.sha }}
           containerAppName: frontend
           resourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
           containerAppEnvironment: ${{ vars.AZURE_CONTAINER_APPS_ENVIRONMENT }}
           yamlConfigPath: ${{ runner.temp }}/container-apps/frontend.yaml
-

@@ -1,0 +1,44 @@
+# ==============================================================================
+# WORKFLOW: CI Orchestrator
+# ==============================================================================
+# Responsibility:
+#   - Validates frontend and backend codebase integrity for pull requests.
+#   - Runs backend unit checks and frontend linting/typecheck/Vite build.
+#   - Ensures status checks pass before PRs can be merged into 'main'.
+#
+# Prerequisites:
+#   - Standard GitHub Actions Ubuntu runner (no cloud credentials or secrets needed).
+#
+# Workflow Dependencies (What should run first):
+#   - None. This is the entrypoint for PR validation.
+#   - Invokes: backend.yml and frontend.yml with push_image=false.
+#
+# Triggers:
+#   - Automatic on: pull_request to 'main'.
+#   - Cannot be run manually or by other workflows.
+# ==============================================================================
+
+name: CI Orchestrator
+
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  backend:
+    name: Backend pipeline
+    uses: ./.github/workflows/backend.yml
+    with:
+      push_image: false
+      image_tag: ${{ github.sha }}
+    secrets: inherit
+
+  frontend:
+    name: Frontend pipeline
+    uses: ./.github/workflows/frontend.yml
+    with:
+      push_image: false
+      image_tag: ${{ github.sha }}
+    secrets: inherit
