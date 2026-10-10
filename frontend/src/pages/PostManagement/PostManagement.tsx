@@ -46,6 +46,7 @@ import { apiService } from '../../services/api'
 import type { Project, TimelineEvent } from '../../services/api'
 import { useAuth } from '../../hooks/useAuth'
 import { SettingsDialog } from './SettingsDialog'
+import { FEATURES } from '../../config/features'
 
 interface BlogPost {
   author: string
@@ -175,9 +176,16 @@ export const PostManagementPage = () => {
       return
     }
 
-    if (!blogForm.content && !blogPdfFile) {
-      setError('Either content or a PDF file must be provided')
-      return
+    if (FEATURES.ENABLE_PDF_UPLOAD) {
+      if (!blogForm.content && !blogPdfFile) {
+        setError('Either content or a PDF file must be provided')
+        return
+      }
+    } else {
+      if (!blogForm.content) {
+        setError('Content is required')
+        return
+      }
     }
 
     try {
@@ -186,7 +194,7 @@ export const PostManagementPage = () => {
 
       let finalPdfUrl = editingBlogId ? blogs.find(b => b.id === editingBlogId)?.pdf_path : undefined;
 
-      if (blogPdfFile) {
+      if (FEATURES.ENABLE_PDF_UPLOAD && blogPdfFile) {
         const uploadedPdf = await apiService.uploadPdf(blogPdfFile);
         finalPdfUrl = uploadedPdf.file_path;
       }
@@ -313,6 +321,10 @@ export const PostManagementPage = () => {
         await apiService.deleteProject(deleteId)
         setMessage('Project deleted successfully')
       } else {
+        if (!FEATURES.ENABLE_PDF_UPLOAD) {
+          setError('PDF operations are disabled')
+          return
+        }
         await apiService.deletePdf(deleteId)
         setMessage('PDF deleted successfully')
       }
@@ -367,7 +379,9 @@ export const PostManagementPage = () => {
               Post Management
             </Typography>
             <Typography color="text.secondary">
-              Upload and manage your blog posts and PDF files
+              {FEATURES.ENABLE_PDF_UPLOAD 
+                ? 'Upload and manage your blog posts and PDF files' 
+                : 'Manage your blog posts and projects'}
             </Typography>
           </Box>
         </Box>
@@ -448,7 +462,7 @@ export const PostManagementPage = () => {
                     </CardContent>
                     <Divider />
                     <Box sx={{ p: 1, display: 'flex', gap: 1 }}>
-                      {!blog.pdf_path && (
+                      {(!blog.pdf_path || !FEATURES.ENABLE_PDF_UPLOAD) && (
                         <IconButton
                           size="small"
                           onClick={() => handleOpenBlogDialog(blog)}
@@ -575,23 +589,25 @@ export const PostManagementPage = () => {
               onChange={(e) => setBlogForm({ ...blogForm, author: e.target.value })}
             />
 
-            <Box>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Or upload a PDF for this blog post
-              </Typography>
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={(e) => setBlogPdfFile(e.target.files?.[0] || null)}
-                style={{ display: 'none' }}
-                id="blog-pdf-input"
-              />
-              <label htmlFor="blog-pdf-input">
-                <Button variant="outlined" component="span" fullWidth>
-                  {blogPdfFile ? blogPdfFile.name : 'Select PDF (Optional)'}
-                </Button>
-              </label>
-            </Box>
+            {FEATURES.ENABLE_PDF_UPLOAD && (
+              <Box>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Or upload a PDF for this blog post
+                </Typography>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => setBlogPdfFile(e.target.files?.[0] || null)}
+                  style={{ display: 'none' }}
+                  id="blog-pdf-input"
+                />
+                <label htmlFor="blog-pdf-input">
+                  <Button variant="outlined" component="span" fullWidth>
+                    {blogPdfFile ? blogPdfFile.name : 'Select PDF (Optional)'}
+                  </Button>
+                </label>
+              </Box>
+            )}
 
             <TextField
               label="Category"
