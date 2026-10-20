@@ -91,21 +91,45 @@ export const Footer = () => {
     setEmailForm(prev => ({ ...prev, [field]: event.target.value }))
   }
 
-  const handleSendEmail = () => {
-    // In a real app, you would send this to your backend API
-    console.log('Sending email:', emailForm)
+  const [isSending, setIsSending] = useState(false)
 
-    // Create mailto link for now
-    const subject = encodeURIComponent(emailForm.subject)
-    const body = encodeURIComponent(
-      `Name: ${emailForm.name}\nEmail: ${emailForm.email}\n\nMessage:\n${emailForm.message}`
-    )
-    const mailtoLink = `mailto:${contactInfo.email}?subject=${subject}&body=${body}`
+  const handleSendEmail = async () => {
+    setIsSending(true)
+    try {
+      const fullMessage = emailForm.subject
+        ? `Subject: ${emailForm.subject}\n\n${emailForm.message}`
+        : emailForm.message
 
-    window.open(mailtoLink, '_blank')
+      // 1. Save to database so inquiry is never lost
+      await apiService.sendContact({
+        name: emailForm.name,
+        email: emailForm.email,
+        message: fullMessage,
+      })
 
-    handleEmailDialogClose()
-    setSnackbarOpen(true)
+      // 2. Open mailto cleanly via location.href without blank tabs
+      const subject = encodeURIComponent(emailForm.subject || 'Portfolio Inquiry')
+      const body = encodeURIComponent(
+        `Name: ${emailForm.name}\nEmail: ${emailForm.email}\n\nMessage:\n${emailForm.message}`
+      )
+      const mailtoLink = `mailto:${contactInfo.email}?subject=${subject}&body=${body}`
+      window.location.href = mailtoLink
+
+      handleEmailDialogClose()
+      setSnackbarOpen(true)
+    } catch (err) {
+      console.error('Contact error:', err)
+      // Fallback: still launch mailto
+      const subject = encodeURIComponent(emailForm.subject || 'Portfolio Inquiry')
+      const body = encodeURIComponent(
+        `Name: ${emailForm.name}\nEmail: ${emailForm.email}\n\nMessage:\n${emailForm.message}`
+      )
+      window.location.href = `mailto:${contactInfo.email}?subject=${subject}&body=${body}`
+      handleEmailDialogClose()
+      setSnackbarOpen(true)
+    } finally {
+      setIsSending(false)
+    }
   }
 
   const isFormValid = emailForm.name && emailForm.email && emailForm.subject && emailForm.message
@@ -283,10 +307,29 @@ export const Footer = () => {
 
         <Divider sx={{ my: 3 }} />
 
-        {/* Copyright */}
-        <Box textAlign="center">
+        {/* Copyright & Katta signature */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 1.5,
+          }}
+        >
+          <Box
+            component="img"
+            src="/logo.jpg"
+            alt="Katta Signature"
+            sx={{
+              width: 24,
+              height: 24,
+              borderRadius: '50%',
+              border: `1px solid ${theme.palette.divider}`,
+              filter: 'drop-shadow(0 0 6px rgba(0, 240, 255, 0.4))',
+            }}
+          />
           <Typography variant="body2" color="text.secondary">
-            © {new Date().getFullYear()} My Portfolio. All rights reserved.
+            © {new Date().getFullYear()} Katta. All rights reserved.
           </Typography>
         </Box>
       </Container>
@@ -349,15 +392,15 @@ export const Footer = () => {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleEmailDialogClose}>Cancel</Button>
+          <Button onClick={handleEmailDialogClose} disabled={isSending}>Cancel</Button>
           <Button
             onClick={handleSendEmail}
             variant="contained"
             color="secondary"
-            disabled={!isFormValid}
+            disabled={!isFormValid || isSending}
             startIcon={<Send />}
           >
-            Send Email
+            {isSending ? 'Sending...' : 'Send Email'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -14,26 +14,7 @@ import * as blobService from './blobService.js';
  * @access  Private
  */
 export const getUploadUrl = asyncHandler(async (req, res) => {
-  const { filename } = req.body;
-
-  if (!filename) {
-    throw new AppError('Filename is required', 400);
-  }
-
-  // Generate unique blob name
-  const blobName = blobService.generateBlobName(filename);
-
-  // Generate SAS URL for uploading (valid for 1 hour)
-  const uploadUrl = await blobService.generateUploadUrl(blobName, 1);
-
-  res.json({
-    success: true,
-    data: {
-      uploadUrl,
-      blobName,
-      expiresIn: 3600, // 1 hour in seconds
-    },
-  });
+  return await blobService.handleBlobUpload(req, res);
 });
 
 /**

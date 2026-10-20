@@ -4,6 +4,7 @@
  */
 
 import axios from 'axios';
+import { upload } from '@vercel/blob/client';
 import { clearAuthTokens, getAccessToken, getRefreshToken, saveAuthTokens } from './authStorage';
 import { apiCache } from './apiCache';
 
@@ -468,16 +469,16 @@ export const apiService = {
 
   async uploadPdf(file: File): Promise<{ id: number; filename: string; file_path: string; file_size: number; uploaded_at: string }> {
     try {
-      const { uploadUrl } = await this.requestPdfUploadUrl(file.name);
-
-      await this.uploadPdfToBlob(uploadUrl, file);
-
-      const directUrl = uploadUrl.split('?')[0];
+      const handleUrl = `${apiBaseURL}/api/admin/pdfs/upload-url/request`;
+      const blob = await upload(`pdfs/${file.name}`, file, {
+        access: 'public',
+        handleUploadUrl: handleUrl,
+      });
 
       const response = await api.post<{ success: boolean; data: { id: number; filename: string; file_path: string; file_size: number; uploaded_at: string } }>('/api/admin/pdfs/upload', {
         title: file.name,
         original_name: file.name,
-        file_path: directUrl,
+        file_path: blob.url,
         file_size: file.size,
         file_hash: await calculateFileHash(file),
       });
