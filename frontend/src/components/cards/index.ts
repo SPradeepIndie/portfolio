@@ -7,4 +7,5 @@
 export { default as BaseCard } from './BaseCard';
 export { default as BlogCard } from './BlogCard';
 export { default as ProjectCard } from './ProjectCard';
+export { ProjectTimelineBar } from './ProjectTimelineBar';
 export type { BaseCardProps } from './BaseCard';

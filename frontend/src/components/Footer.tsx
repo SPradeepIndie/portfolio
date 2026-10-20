@@ -57,7 +57,6 @@ const defaultContactInfo: ContactInfo = {
 export const Footer = () => {
   const theme = useTheme()
   const [emailDialogOpen, setEmailDialogOpen] = useState(false)
-  const [snackbarOpen, setSnackbarOpen] = useState(false)
   const [emailForm, setEmailForm] = useState<EmailForm>({
     name: '',
     email: '',
@@ -91,6 +90,15 @@ export const Footer = () => {
     setEmailForm(prev => ({ ...prev, [field]: event.target.value }))
   }
 
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean
+    severity: 'success' | 'error' | 'warning' | 'info'
+    message: string
+  }>({
+    open: false,
+    severity: 'success',
+    message: '',
+  })
   const [isSending, setIsSending] = useState(false)
 
   const handleSendEmail = async () => {
@@ -116,7 +124,11 @@ export const Footer = () => {
       window.location.href = mailtoLink
 
       handleEmailDialogClose()
-      setSnackbarOpen(true)
+      setSnackbar({
+        open: true,
+        severity: 'success',
+        message: 'Inquiry saved successfully! Email client launched to deliver your message.',
+      })
     } catch (err) {
       console.error('Contact error:', err)
       // Fallback: still launch mailto
@@ -126,7 +138,11 @@ export const Footer = () => {
       )
       window.location.href = `mailto:${contactInfo.email}?subject=${subject}&body=${body}`
       handleEmailDialogClose()
-      setSnackbarOpen(true)
+      setSnackbar({
+        open: true,
+        severity: 'error',
+        message: 'Could not reach server database, but your direct mail client has been opened as fallback.',
+      })
     } finally {
       setIsSending(false)
     }
@@ -405,18 +421,18 @@ export const Footer = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Success Snackbar */}
+      {/* Dynamic Feedback Snackbar */}
       <Snackbar
-        open={snackbarOpen}
+        open={snackbar.open}
         autoHideDuration={6000}
-        onClose={() => setSnackbarOpen(false)}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
       >
         <Alert
-          onClose={() => setSnackbarOpen(false)}
-          severity="success"
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
           sx={{ width: '100%' }}
         >
-          Email client opened! Please send your message.
+          {snackbar.message}
         </Alert>
       </Snackbar>
     </Box>

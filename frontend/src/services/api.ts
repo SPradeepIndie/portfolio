@@ -125,6 +125,8 @@ export interface Project {
   featured: boolean;
   createdAt: string;
   status: 'Completed' | 'In Progress' | 'Planning' | 'Initiated';
+  startDate?: string;
+  endDate?: string;
   timeline?: TimelineEvent[];
   is_hidden?: boolean;
 }

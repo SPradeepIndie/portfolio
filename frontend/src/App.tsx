@@ -12,7 +12,7 @@ import { lightTheme, darkTheme } from './theme'
 import { Layout } from './components/Layout'
 import { RequireAuth } from './components/RequireAuth'
 import { LoadingScreen } from './components/LoadingScreen'
-import { HomePage, ProjectsPage, BlogsPage, BlogDetail, MorePage, LoginPage, RegisterPage, UserPage, PostManagementPage } from './pages'
+import { HomePage, ProjectsPage, BlogsPage, BlogDetail, ResearchPage, ResearchDetail, MorePage, LoginPage, RegisterPage, UserPage, PostManagementPage } from './pages'
 import './App.css'
 
 function App() {
@@ -44,6 +44,8 @@ function App() {
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/blogs" element={<BlogsPage />} />
             <Route path="/blog/:id" element={<BlogDetail />} />
+            <Route path="/research" element={<ResearchPage />} />
+            <Route path="/research/:id" element={<ResearchDetail />} />
             <Route path="/more" element={<MorePage />} />
             <Route
               path="/user"

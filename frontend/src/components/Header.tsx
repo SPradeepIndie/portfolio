@@ -36,6 +36,7 @@ const navigationItems: NavigationItem[] = [
   { label: 'Home', path: '/' },
   { label: 'Projects', path: '/projects' },
   { label: 'Blogs', path: '/blogs' },
+  { label: 'Research', path: '/research' },
   { label: 'More', path: '/more' },
 ]
 

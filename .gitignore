@@ -77,3 +77,4 @@ build/Release
 
 # OS files
 Thumbs.db
+.agents
