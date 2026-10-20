@@ -4,8 +4,25 @@
  * All rights reserved.
  */
 
-:root {
-  color-scheme: dark light;
+[data-theme='light'] {
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+/* Date picker indicators responsive to theme mode */
+[data-theme='light'] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0);
+  opacity: 0.75;
+  cursor: pointer;
+}
+
+[data-theme='dark'] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.85;
+  cursor: pointer;
 }
 
 html, body {

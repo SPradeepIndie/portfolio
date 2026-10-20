@@ -1,0 +1,2 @@
+ALTER TABLE projects DROP COLUMN IF EXISTS start_date;
+ALTER TABLE projects DROP COLUMN IF EXISTS end_date;

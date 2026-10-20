@@ -26,13 +26,13 @@ import {
   CalendarToday as CalendarIcon,
 } from '@mui/icons-material';
 import { apiService } from '../../services/api';
-import type { Blog } from '../../services/api';
+import type { ResearchItem } from '../../services/api';
 import ReactMarkdown from 'react-markdown';
 
 export const ResearchDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [item, setItem] = useState<Blog | null>(null);
+  const [item, setItem] = useState<(ResearchItem & { publishedAt?: string; excerpt?: string }) | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,12 +41,22 @@ export const ResearchDetail: React.FC = () => {
       try {
         setLoading(true);
         if (!id) return;
-        const data = await apiService.getBlog(parseInt(id, 10));
-        if (data) {
-          setItem(data);
-        } else {
-          setError('Research paper not found');
+        const numId = parseInt(id, 10);
+        try {
+          const resData = await apiService.getResearchById(numId);
+          if (resData) {
+            setItem({ ...resData, publishedAt: resData.created_at, excerpt: resData.abstract });
+            return;
+          }
+        } catch {
+          // Fallback to blogs
+          const blogData = await apiService.getBlog(numId);
+          if (blogData) {
+            setItem({ ...blogData, abstract: blogData.excerpt, status: blogData.featured ? 'Published' : 'Ongoing' } as any);
+            return;
+          }
         }
+        setError('Research paper not found');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load research item');
       } finally {
@@ -78,7 +88,7 @@ export const ResearchDetail: React.FC = () => {
     );
   }
 
-  const pdfUrl = item.pdf_path || item.pdf_url;
+  const pdfUrl = (item as any).pdf_path || item.pdf_url;
 
   return (
     <Container maxWidth="md" sx={{ py: { xs: 4, md: 8 } }}>
@@ -157,7 +167,7 @@ export const ResearchDetail: React.FC = () => {
             Abstract / Executive Summary
           </Typography>
           <Typography variant="body1" sx={{ fontStyle: 'italic', lineHeight: 1.7 }}>
-            {item.excerpt}
+            {item.abstract || item.excerpt}
           </Typography>
         </Paper>
 

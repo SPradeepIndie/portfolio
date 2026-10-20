@@ -124,9 +124,11 @@ export interface Project {
   category: string;
   featured: boolean;
   createdAt: string;
-  status: 'Completed' | 'In Progress' | 'Planning' | 'Initiated';
+  status: 'Completed' | 'In Progress' | 'Planning' | 'Initiated' | (string & {});
   startDate?: string;
   endDate?: string;
+  start_date?: string;
+  end_date?: string;
   timeline?: TimelineEvent[];
   is_hidden?: boolean;
 }
@@ -148,6 +150,22 @@ export interface Blog {
   pdf_path?: string;
   pdf_url?: string;
   is_hidden?: boolean;
+}
+
+export interface ResearchItem {
+  id: number;
+  title: string;
+  abstract: string;
+  content?: string;
+  author: string;
+  status: 'Ongoing' | 'In Review' | 'Published' | 'Preprint' | (string & {});
+  category: string;
+  tags: string[];
+  pdf_url?: string;
+  featured: boolean;
+  is_hidden?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ApiResponse<T> {
@@ -526,6 +544,53 @@ export const apiService = {
   async deleteTag(id: number) {
     await api.delete(`/api/settings/tags/${id}`);
     apiCache.invalidate('settings');
+  },
+
+  // Research
+  async getResearch(admin = false): Promise<ResearchItem[]> {
+    try {
+      const response = await api.get<{ success: boolean; data: ResearchItem[] }>(
+        `/api/research${admin ? '?admin=true' : ''}`
+      );
+      return response.data.data || [];
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to fetch research items'));
+    }
+  },
+
+  async getResearchById(id: number): Promise<ResearchItem> {
+    try {
+      const response = await api.get<{ success: boolean; data: ResearchItem }>(`/api/research/${id}`);
+      return response.data.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to fetch research details'));
+    }
+  },
+
+  async createResearch(payload: Partial<ResearchItem>): Promise<ResearchItem> {
+    try {
+      const response = await api.post<{ success: boolean; data: ResearchItem }>('/api/research', payload);
+      return response.data.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to create research item'));
+    }
+  },
+
+  async updateResearch(id: number, payload: Partial<ResearchItem>): Promise<ResearchItem> {
+    try {
+      const response = await api.put<{ success: boolean; data: ResearchItem }>(`/api/research/${id}`, payload);
+      return response.data.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to update research item'));
+    }
+  },
+
+  async deleteResearch(id: number): Promise<void> {
+    try {
+      await api.delete(`/api/research/${id}`);
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to delete research item'));
+    }
   }
 };
 

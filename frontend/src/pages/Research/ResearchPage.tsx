@@ -35,7 +35,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../../services/api';
-import type { Blog } from '../../services/api';
+import type { Blog, ResearchItem } from '../../services/api';
 
 interface UploadedDoc {
   id: number;
@@ -46,6 +46,7 @@ interface UploadedDoc {
 }
 
 export const ResearchPage: React.FC = () => {
+  const [researchList, setResearchList] = useState<ResearchItem[]>([]);
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [docs, setDocs] = useState<UploadedDoc[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,11 +61,15 @@ export const ResearchPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const [blogData, docData] = await Promise.allSettled([
+      const [resData, blogData, docData] = await Promise.allSettled([
+        apiService.getResearch(),
         apiService.getBlogs(),
         apiService.getUploadedPdfs(),
       ]);
 
+      if (resData.status === 'fulfilled') {
+        setResearchList(resData.value || []);
+      }
       if (blogData.status === 'fulfilled') {
         setBlogs(blogData.value || []);
       }
@@ -86,27 +91,33 @@ export const ResearchPage: React.FC = () => {
     setTabValue(newValue);
   };
 
-  // Filter research items (category Research or tagged Research or has PDF attached)
-  const researchBlogs = blogs.filter(
-    (b) =>
-      b.category?.toLowerCase() === 'research' ||
-      b.tags?.some((t) => t.toLowerCase() === 'research') ||
-      b.pdf_path ||
-      b.pdf_url
-  );
-
-  // If none explicitly tagged research yet, display latest blogs as research entries
-  const displayBlogs = researchBlogs.length > 0 ? researchBlogs : blogs;
+  // Dedicated research items or fallback to research-tagged blogs
+  const displayItems: ResearchItem[] = researchList.length > 0 
+    ? researchList 
+    : blogs.filter((b) => b.category?.toLowerCase() === 'research' || b.tags?.some((t) => t.toLowerCase() === 'research') || b.pdf_path || b.pdf_url).map(b => ({
+        id: b.id,
+        title: b.title,
+        abstract: b.excerpt,
+        content: b.content,
+        author: b.author,
+        status: (b.featured ? 'Published' : 'Ongoing') as 'Published' | 'Ongoing',
+        category: b.category,
+        tags: b.tags,
+        pdf_url: b.pdf_path || b.pdf_url,
+        featured: b.featured,
+        is_hidden: b.is_hidden,
+        created_at: b.publishedAt,
+      }));
 
   const getFilteredItems = () => {
-    let list = displayBlogs;
+    let list = displayItems;
 
     if (tabValue === 1) {
       // Ongoing
-      list = list.filter((b) => !b.featured);
+      list = list.filter((b) => b.status === 'Ongoing' || !b.featured);
     } else if (tabValue === 2) {
-      // Published Papers (featured or explicit)
-      list = list.filter((b) => b.featured || b.category?.toLowerCase() === 'research');
+      // Published Papers
+      list = list.filter((b) => b.status === 'Published' || b.featured);
     }
 
     if (searchQuery.trim()) {
@@ -114,15 +125,16 @@ export const ResearchPage: React.FC = () => {
       list = list.filter(
         (b) =>
           b.title.toLowerCase().includes(q) ||
-          b.excerpt.toLowerCase().includes(q) ||
-          b.tags?.some((t) => t.toLowerCase().includes(q))
+          b.abstract.toLowerCase().includes(q) ||
+          b.tags?.some((t) => t.toLowerCase().includes(q)) ||
+          b.category?.toLowerCase().includes(q)
       );
     }
 
     return list;
   };
 
-  const filteredBlogs = getFilteredItems();
+  const filteredItems = getFilteredItems();
 
   const formatFileSize = (bytes: number) => {
     if (!bytes) return '0 KB';
@@ -295,7 +307,7 @@ export const ResearchPage: React.FC = () => {
       ) : (
         /* Research Articles & Papers Grid */
         <Box>
-          {filteredBlogs.length === 0 ? (
+          {filteredItems.length === 0 ? (
             <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 3 }}>
               <BookIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
               <Typography variant="h6" gutterBottom>
@@ -313,8 +325,8 @@ export const ResearchPage: React.FC = () => {
                 gap: 3,
               }}
             >
-              {filteredBlogs.map((item) => {
-                const pdfUrl = item.pdf_path || item.pdf_url;
+              {filteredItems.map((item) => {
+                const pdfUrl = item.pdf_url;
                 return (
                   <Card
                     key={item.id}
@@ -335,9 +347,9 @@ export const ResearchPage: React.FC = () => {
                     <CardContent sx={{ pb: 1 }}>
                       <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
                         <Chip
-                          label={item.featured ? 'Published' : 'Ongoing Research'}
+                          label={item.status || (item.featured ? 'Published' : 'Ongoing Research')}
                           size="small"
-                          color={item.featured ? 'secondary' : 'default'}
+                          color={item.status === 'Published' || item.featured ? 'secondary' : 'default'}
                           sx={{ fontWeight: 700, fontSize: '0.75rem' }}
                         />
                         {pdfUrl && (
@@ -367,7 +379,7 @@ export const ResearchPage: React.FC = () => {
                           lineHeight: 1.6,
                         }}
                       >
-                        {item.excerpt}
+                        {item.abstract}
                       </Typography>
 
                       {item.tags && item.tags.length > 0 && (

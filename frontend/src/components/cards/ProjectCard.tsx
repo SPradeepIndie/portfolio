@@ -217,8 +217,8 @@ function ProjectCard({ project, featured = false }: ProjectCardProps) {
               Project Timeline & Progress
             </Typography>
             <ProjectTimelineBar
-              startDate={project.startDate || project.createdAt}
-              endDate={project.endDate}
+              startDate={project.startDate || project.start_date || project.createdAt}
+              endDate={project.endDate || project.end_date}
               timeline={project.timeline}
               status={project.status}
             />
