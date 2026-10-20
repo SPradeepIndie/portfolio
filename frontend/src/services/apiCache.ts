@@ -10,8 +10,8 @@ interface CacheEntry<T> {
 }
 
 class ApiCache {
-  private cache = new Map<string, CacheEntry<any>>();
-  private inflight = new Map<string, Promise<any>>();
+  private cache = new Map<string, CacheEntry<unknown>>();
+  private inflight = new Map<string, Promise<unknown>>();
 
   /**
    * Fetch with cache.

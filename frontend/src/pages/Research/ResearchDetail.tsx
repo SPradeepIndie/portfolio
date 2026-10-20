@@ -52,7 +52,7 @@ export const ResearchDetail: React.FC = () => {
           // Fallback to blogs
           const blogData = await apiService.getBlog(numId);
           if (blogData) {
-            setItem({ ...blogData, abstract: blogData.excerpt, status: blogData.featured ? 'Published' : 'Ongoing' } as any);
+            setItem({ ...blogData, abstract: blogData.excerpt, status: blogData.featured ? 'Published' : 'Ongoing' } as unknown as ResearchItem);
             return;
           }
         }
@@ -88,7 +88,7 @@ export const ResearchDetail: React.FC = () => {
     );
   }
 
-  const pdfUrl = (item as any).pdf_path || item.pdf_url;
+  const pdfUrl = (item as ResearchItem & { pdf_path?: string }).pdf_path || item.pdf_url;
 
   return (
     <Container maxWidth="md" sx={{ py: { xs: 4, md: 8 } }}>

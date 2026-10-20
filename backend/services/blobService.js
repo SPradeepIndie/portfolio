@@ -42,11 +42,19 @@ export const handleBlobUpload = async (req, res) => {
  * @returns {Promise<void>}
  */
 export const deleteBlob = async (blobUrl) => {
-  if (!blobUrl || !blobUrl.includes('vercel-storage.com')) {
+  if (!blobUrl || typeof blobUrl !== 'string') {
     return;
   }
 
   try {
+    const parsedUrl = new URL(blobUrl);
+    const host = parsedUrl.hostname.toLowerCase();
+    const isAllowedHost = host === 'vercel-storage.com' || host.endsWith('.vercel-storage.com');
+    if (!isAllowedHost) {
+      console.warn('Rejected deletion of blob with untrusted host:', host);
+      return;
+    }
+
     await del(blobUrl);
     console.log('Deleted blob from Vercel storage:', blobUrl);
   } catch (error) {

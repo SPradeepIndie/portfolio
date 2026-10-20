@@ -34,6 +34,7 @@ import {
   FormControlLabel,
   Autocomplete,
   createFilterOptions,
+  type Theme,
 } from '@mui/material'
 import {
   CloudUpload,
@@ -90,7 +91,7 @@ const RESEARCH_STATUS_OPTIONS = [
 
 const dateInputSx = {
   '& input[type="date"]::-webkit-calendar-picker-indicator': {
-    filter: (theme: any) => (theme.palette.mode === 'dark' ? 'invert(1)' : 'invert(0)'),
+    filter: (theme: Theme) => (theme.palette.mode === 'dark' ? 'invert(1)' : 'invert(0)'),
     cursor: 'pointer',
     opacity: 0.8,
   },
@@ -419,7 +420,7 @@ export const PostManagementPage = () => {
 
       const payload = {
         ...projectForm,
-        status: projectForm.status as any,
+        status: projectForm.status as Project['status'],
         technologies: projectForm.technologies,
         startDate: projectForm.startDate || undefined,
         endDate: projectForm.endDate || undefined,
@@ -1037,7 +1038,7 @@ export const PostManagementPage = () => {
                 fullWidth
                 InputLabelProps={{ shrink: true }}
                 sx={dateInputSx}
-                onClick={(e) => (e.target as any).showPicker?.()}
+                onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                 value={projectForm.startDate}
                 onChange={(e) => setProjectForm({ ...projectForm, startDate: e.target.value })}
               />
@@ -1048,7 +1049,7 @@ export const PostManagementPage = () => {
                 fullWidth
                 InputLabelProps={{ shrink: true }}
                 sx={dateInputSx}
-                onClick={(e) => (e.target as any).showPicker?.()}
+                onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                 value={projectForm.endDate}
                 onChange={(e) => setProjectForm({ ...projectForm, endDate: e.target.value })}
               />
@@ -1184,7 +1185,7 @@ export const PostManagementPage = () => {
                         type="date"
                         InputLabelProps={{ shrink: true }}
                         sx={dateInputSx}
-                        onClick={(e) => (e.target as any).showPicker?.()}
+                        onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                         value={event.startTime}
                         onChange={(e) => {
                           const newTimeline = [...projectForm.timeline];
@@ -1202,7 +1203,7 @@ export const PostManagementPage = () => {
                         type="date"
                         InputLabelProps={{ shrink: true }}
                         sx={dateInputSx}
-                        onClick={(e) => (e.target as any).showPicker?.()}
+                        onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                         value={event.endTime}
                         onChange={(e) => {
                           const newTimeline = [...projectForm.timeline];
