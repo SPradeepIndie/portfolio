@@ -9,6 +9,7 @@ export { Footer } from './Footer'
 export { Layout } from './Layout'
 export { ThemeToggle } from './ThemeToggle'
 export { RequireAuth } from './RequireAuth'
+export { LoadingScreen } from './LoadingScreen'
 
 // Export cards
 export { BaseCard, BlogCard, ProjectCard } from './cards'

@@ -4,7 +4,11 @@
  */
 
 import axios from 'axios';
+import { upload } from '@vercel/blob/client';
 import { clearAuthTokens, getAccessToken, getRefreshToken, saveAuthTokens } from './authStorage';
+import { apiCache } from './apiCache';
+
+export { apiCache };
 
 const apiBaseURL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD
   ? ''
@@ -120,7 +124,11 @@ export interface Project {
   category: string;
   featured: boolean;
   createdAt: string;
-  status: 'Completed' | 'In Progress' | 'Planning' | 'Initiated';
+  status: 'Completed' | 'In Progress' | 'Planning' | 'Initiated' | (string & {});
+  startDate?: string;
+  endDate?: string;
+  start_date?: string;
+  end_date?: string;
   timeline?: TimelineEvent[];
   is_hidden?: boolean;
 }
@@ -142,6 +150,22 @@ export interface Blog {
   pdf_path?: string;
   pdf_url?: string;
   is_hidden?: boolean;
+}
+
+export interface ResearchItem {
+  id: number;
+  title: string;
+  abstract: string;
+  content?: string;
+  author: string;
+  status: 'Ongoing' | 'In Review' | 'Published' | 'Preprint' | (string & {});
+  category: string;
+  tags: string[];
+  pdf_url?: string;
+  featured: boolean;
+  is_hidden?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ApiResponse<T> {
@@ -220,14 +244,19 @@ export async function calculateFileHash(file: File): Promise<string> {
 
 export const apiService = {
   // Projects
-  async getProjects(): Promise<Project[]> {
-    try {
-      const response = await api.get<ApiResponse<Project[]>>('/api/projects');
-      return response.data.data;
-    } catch (error) {
-      console.error('Failed to fetch projects:', error);
-      throw new Error(getErrorMessage(error, 'Failed to load projects'));
+  async getProjects(forceRefresh = false): Promise<Project[]> {
+    if (forceRefresh) {
+      apiCache.invalidate('projects');
     }
+    return apiCache.getOrFetch('projects', async () => {
+      try {
+        const response = await api.get<ApiResponse<Project[]>>('/api/projects');
+        return response.data.data;
+      } catch (error) {
+        console.error('Failed to fetch projects:', error);
+        throw new Error(getErrorMessage(error, 'Failed to load projects'));
+      }
+    }, 5 * 60 * 1000);
   },
 
   async getProject(id: number): Promise<Project | null> {
@@ -243,6 +272,8 @@ export const apiService = {
   async createProject(payload: Partial<Project>): Promise<Project> {
     try {
       const response = await api.post<{ success: boolean; data: Project }>('/api/projects', payload);
+      apiCache.invalidate('projects');
+      apiCache.invalidate('portfolio');
       return response.data.data;
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Failed to create project'));
@@ -252,6 +283,8 @@ export const apiService = {
   async updateProject(id: number, payload: Partial<Project>): Promise<Project> {
     try {
       const response = await api.put<{ success: boolean; data: Project }>(`/api/projects/${id}`, payload);
+      apiCache.invalidate('projects');
+      apiCache.invalidate('portfolio');
       return response.data.data;
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Failed to update project'));
@@ -261,20 +294,27 @@ export const apiService = {
   async deleteProject(id: number): Promise<void> {
     try {
       await api.delete(`/api/projects/${id}`);
+      apiCache.invalidate('projects');
+      apiCache.invalidate('portfolio');
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Failed to delete project'));
     }
   },
 
   // Blogs
-  async getBlogs(): Promise<Blog[]> {
-    try {
-      const response = await api.get<ApiResponse<Blog[]>>('/api/blogs');
-      return response.data.data;
-    } catch (error) {
-      console.error('Failed to fetch blogs:', error);
-      throw new Error(getErrorMessage(error, 'Failed to load blogs'));
+  async getBlogs(forceRefresh = false): Promise<Blog[]> {
+    if (forceRefresh) {
+      apiCache.invalidate('blogs');
     }
+    return apiCache.getOrFetch('blogs', async () => {
+      try {
+        const response = await api.get<ApiResponse<Blog[]>>('/api/blogs');
+        return response.data.data;
+      } catch (error) {
+        console.error('Failed to fetch blogs:', error);
+        throw new Error(getErrorMessage(error, 'Failed to load blogs'));
+      }
+    }, 5 * 60 * 1000);
   },
 
   async getBlog(id: number): Promise<Blog | null> {
@@ -288,14 +328,19 @@ export const apiService = {
   },
 
   // Portfolio data
-  async getPortfolio(): Promise<PortfolioData> {
-    try {
-      const response = await api.get<PortfolioData>('/api/portfolio');
-      return response.data;
-    } catch (error) {
-      console.error('Failed to fetch portfolio:', error);
-      throw new Error(getErrorMessage(error, 'Failed to load portfolio data'));
+  async getPortfolio(forceRefresh = false): Promise<PortfolioData> {
+    if (forceRefresh) {
+      apiCache.invalidate('portfolio');
     }
+    return apiCache.getOrFetch('portfolio', async () => {
+      try {
+        const response = await api.get<PortfolioData>('/api/portfolio');
+        return response.data;
+      } catch (error) {
+        console.error('Failed to fetch portfolio:', error);
+        throw new Error(getErrorMessage(error, 'Failed to load portfolio data'));
+      }
+    }, 10 * 60 * 1000);
   },
 
   // Contact
@@ -356,6 +401,7 @@ export const apiService = {
   async updateCurrentUser(payload: UpdateProfilePayload): Promise<AuthUser> {
     try {
       const response = await api.put<{ success: boolean; data: AuthUser }>('/api/auth/me', payload);
+      apiCache.invalidate('portfolio');
       return response.data.data;
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Failed to update profile'));
@@ -366,6 +412,7 @@ export const apiService = {
   async createBlog(payload: { title: string; excerpt: string; content: string; author: string; category: string; tags: string[]; featured?: boolean; pdf_url?: string }): Promise<Blog> {
     try {
       const response = await api.post<{ success: boolean; data: Blog }>('/api/blogs', payload);
+      apiCache.invalidate('blogs');
       return response.data.data;
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Failed to create blog'));
@@ -375,6 +422,7 @@ export const apiService = {
   async updateBlog(id: number, payload: { title: string; excerpt: string; content: string; author: string; category: string; tags: string[]; featured?: boolean; pdf_url?: string }): Promise<Blog> {
     try {
       const response = await api.put<{ success: boolean; data: Blog }>(`/api/blogs/${id}`, payload);
+      apiCache.invalidate('blogs');
       return response.data.data;
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Failed to update blog'));
@@ -384,6 +432,7 @@ export const apiService = {
   async deleteBlog(id: number): Promise<void> {
     try {
       await api.delete(`/api/blogs/${id}`);
+      apiCache.invalidate('blogs');
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Failed to delete blog'));
     }
@@ -440,16 +489,16 @@ export const apiService = {
 
   async uploadPdf(file: File): Promise<{ id: number; filename: string; file_path: string; file_size: number; uploaded_at: string }> {
     try {
-      const { uploadUrl } = await this.requestPdfUploadUrl(file.name);
-
-      await this.uploadPdfToBlob(uploadUrl, file);
-
-      const directUrl = uploadUrl.split('?')[0];
+      const handleUrl = `${apiBaseURL}/api/admin/pdfs/upload-url/request`;
+      const blob = await upload(`pdfs/${file.name}`, file, {
+        access: 'public',
+        handleUploadUrl: handleUrl,
+      });
 
       const response = await api.post<{ success: boolean; data: { id: number; filename: string; file_path: string; file_size: number; uploaded_at: string } }>('/api/admin/pdfs/upload', {
         title: file.name,
         original_name: file.name,
-        file_path: directUrl,
+        file_path: blob.url,
         file_size: file.size,
         file_hash: await calculateFileHash(file),
       });
@@ -469,23 +518,79 @@ export const apiService = {
   },
 
   // Settings
-  async getSettings() {
-    const response = await api.get('/api/settings');
-    return response.data.data;
+  async getSettings(forceRefresh = false) {
+    if (forceRefresh) {
+      apiCache.invalidate('settings');
+    }
+    return apiCache.getOrFetch('settings', async () => {
+      const response = await api.get('/api/settings');
+      return response.data.data;
+    }, 15 * 60 * 1000);
   },
   async createCategory(payload: { name: string, entity_type: string }) {
     const response = await api.post('/api/settings/categories', payload);
+    apiCache.invalidate('settings');
     return response.data.data;
   },
   async deleteCategory(id: number) {
     await api.delete(`/api/settings/categories/${id}`);
+    apiCache.invalidate('settings');
   },
   async createTag(payload: { name: string, entity_type: string }) {
     const response = await api.post('/api/settings/tags', payload);
+    apiCache.invalidate('settings');
     return response.data.data;
   },
   async deleteTag(id: number) {
     await api.delete(`/api/settings/tags/${id}`);
+    apiCache.invalidate('settings');
+  },
+
+  // Research
+  async getResearch(admin = false): Promise<ResearchItem[]> {
+    try {
+      const response = await api.get<{ success: boolean; data: ResearchItem[] }>(
+        `/api/research${admin ? '?admin=true' : ''}`
+      );
+      return response.data.data || [];
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to fetch research items'));
+    }
+  },
+
+  async getResearchById(id: number): Promise<ResearchItem> {
+    try {
+      const response = await api.get<{ success: boolean; data: ResearchItem }>(`/api/research/${id}`);
+      return response.data.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to fetch research details'));
+    }
+  },
+
+  async createResearch(payload: Partial<ResearchItem>): Promise<ResearchItem> {
+    try {
+      const response = await api.post<{ success: boolean; data: ResearchItem }>('/api/research', payload);
+      return response.data.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to create research item'));
+    }
+  },
+
+  async updateResearch(id: number, payload: Partial<ResearchItem>): Promise<ResearchItem> {
+    try {
+      const response = await api.put<{ success: boolean; data: ResearchItem }>(`/api/research/${id}`, payload);
+      return response.data.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to update research item'));
+    }
+  },
+
+  async deleteResearch(id: number): Promise<void> {
+    try {
+      await api.delete(`/api/research/${id}`);
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Failed to delete research item'));
+    }
   }
 };
 

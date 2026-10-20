@@ -124,6 +124,94 @@ export const baseTheme: ThemeOptions = {
         }),
       },
     },
+    MuiDialog: {
+      styleOverrides: {
+        paper: ({ theme }) => ({
+          borderRadius: 20,
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(10, 15, 29, 0.94)' : 'rgba(255, 255, 255, 0.96)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          border: theme.palette.mode === 'dark' 
+            ? '1px solid rgba(0, 240, 255, 0.22)' 
+            : '1px solid rgba(14, 165, 233, 0.2)',
+          boxShadow: theme.palette.mode === 'dark'
+            ? '0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 240, 255, 0.15)'
+            : '0 20px 45px -10px rgba(0, 0, 0, 0.15), 0 0 25px rgba(14, 165, 233, 0.1)',
+          backgroundImage: 'none',
+        }),
+      },
+    },
+    MuiDialogTitle: {
+      styleOverrides: {
+        root: {
+          fontWeight: 700,
+          fontSize: '1.35rem',
+          letterSpacing: '-0.01em',
+          padding: '20px 24px 16px',
+        },
+      },
+    },
+    MuiDialogContent: {
+      styleOverrides: {
+        root: {
+          padding: '16px 24px',
+        },
+      },
+    },
+    MuiDialogActions: {
+      styleOverrides: {
+        root: {
+          padding: '16px 24px 20px',
+        },
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          borderRadius: 12,
+          transition: 'border-color 0.25s ease, box-shadow 0.25s ease',
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.01)',
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: theme.palette.primary.main,
+          },
+          '&.Mui-focused': {
+            boxShadow: theme.palette.mode === 'dark'
+              ? '0 0 0 3px rgba(0, 240, 255, 0.2)'
+              : '0 0 0 3px rgba(14, 165, 233, 0.2)',
+          },
+        }),
+      },
+    },
+    MuiAlert: {
+      styleOverrides: {
+        root: () => ({
+          borderRadius: 12,
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          fontWeight: 500,
+        }),
+        standardSuccess: ({ theme }) => ({
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(6, 78, 59, 0.85)' : 'rgba(209, 250, 229, 0.95)',
+          color: theme.palette.mode === 'dark' ? '#6ee7b7' : '#065f46',
+          border: '1px solid rgba(16, 185, 129, 0.4)',
+        }),
+        standardError: ({ theme }) => ({
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(127, 29, 29, 0.85)' : 'rgba(254, 226, 226, 0.95)',
+          color: theme.palette.mode === 'dark' ? '#fca5a5' : '#991b1b',
+          border: '1px solid rgba(239, 68, 68, 0.4)',
+        }),
+        standardWarning: ({ theme }) => ({
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(120, 53, 15, 0.85)' : 'rgba(254, 243, 199, 0.95)',
+          color: theme.palette.mode === 'dark' ? '#fcd34d' : '#92400e',
+          border: '1px solid rgba(245, 158, 11, 0.4)',
+        }),
+        standardInfo: ({ theme }) => ({
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(12, 74, 110, 0.85)' : 'rgba(224, 242, 254, 0.95)',
+          color: theme.palette.mode === 'dark' ? '#7dd3fc' : '#075985',
+          border: '1px solid rgba(14, 165, 233, 0.4)',
+        }),
+      },
+    },
   },
   breakpoints: {
     values: {

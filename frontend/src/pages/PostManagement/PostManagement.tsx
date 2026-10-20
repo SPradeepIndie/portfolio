@@ -32,6 +32,9 @@ import {
   InputLabel,
   Switch,
   FormControlLabel,
+  Autocomplete,
+  createFilterOptions,
+  type Theme,
 } from '@mui/material'
 import {
   CloudUpload,
@@ -40,12 +43,14 @@ import {
   Description,
   Work,
   Add,
-  RemoveCircleOutline
+  RemoveCircleOutline,
+  Science,
 } from '@mui/icons-material'
 import { apiService } from '../../services/api'
-import type { Project, TimelineEvent } from '../../services/api'
+import type { Project, TimelineEvent, ResearchItem } from '../../services/api'
 import { useAuth } from '../../hooks/useAuth'
 import { SettingsDialog } from './SettingsDialog'
+import { FEATURES } from '../../config/features'
 
 interface BlogPost {
   author: string
@@ -62,14 +67,47 @@ interface BlogPost {
   is_hidden?: boolean
 }
 
+const filter = createFilterOptions<string>();
+
+const PROJECT_STATUS_OPTIONS = [
+  'Initiated',
+  'Planning',
+  'In Progress',
+  'Under Review',
+  'Beta Testing',
+  'Completed',
+  'On Hold',
+  'Archived',
+];
+
+const RESEARCH_STATUS_OPTIONS = [
+  'Ongoing',
+  'In Review',
+  'Under Peer Review',
+  'Published',
+  'Preprint',
+  'Working Paper',
+];
+
+const dateInputSx = {
+  '& input[type="date"]::-webkit-calendar-picker-indicator': {
+    filter: (theme: Theme) => (theme.palette.mode === 'dark' ? 'invert(1)' : 'invert(0)'),
+    cursor: 'pointer',
+    opacity: 0.8,
+  },
+};
+
 export const PostManagementPage = () => {
   const { isAuthenticated } = useAuth()
   const [blogs, setBlogs] = useState<BlogPost[]>([])
   const [projects, setProjects] = useState<Project[]>([])
+  const [researchList, setResearchList] = useState<ResearchItem[]>([])
+  const [systemCategories, setSystemCategories] = useState<{ id: number; name: string; entity_type: string }[]>([])
+  const [systemTags, setSystemTags] = useState<{ id: number; name: string; entity_type: string }[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'blogs' | 'projects'>('blogs')
+  const [activeTab, setActiveTab] = useState<'blogs' | 'projects' | 'research'>('blogs')
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   // Blog form state
@@ -80,7 +118,7 @@ export const PostManagementPage = () => {
     content: '',
     author: '',
     category: '',
-    tags: '',
+    tags: [] as string[],
     featured: false,
     is_hidden: false,
   })
@@ -92,22 +130,39 @@ export const PostManagementPage = () => {
   const [projectForm, setProjectForm] = useState({
     title: '',
     description: '',
-    technologies: '',
+    technologies: [] as string[],
     github: '',
     demo: '',
     image: '',
     category: '',
     featured: false,
     status: 'Completed',
+    startDate: '',
+    endDate: '',
     timeline: [] as TimelineEvent[],
     is_hidden: false,
   })
   const [editingProjectId, setEditingProjectId] = useState<number | null>(null)
 
+  // Research form state
+  const [researchDialogOpen, setResearchDialogOpen] = useState(false)
+  const [researchForm, setResearchForm] = useState({
+    title: '',
+    abstract: '',
+    content: '',
+    author: '',
+    status: 'Ongoing',
+    category: 'Computer Science',
+    tags: [] as string[],
+    featured: false,
+    is_hidden: false,
+  })
+  const [editingResearchId, setEditingResearchId] = useState<number | null>(null)
+  const [researchPdfFile, setResearchPdfFile] = useState<File | null>(null)
 
   // Delete dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [deleteType, setDeleteType] = useState<'blog' | 'pdf' | 'project' | null>(null)
+  const [deleteType, setDeleteType] = useState<'blog' | 'pdf' | 'project' | 'research' | null>(null)
   const [deleteId, setDeleteId] = useState<number | null>(null)
 
   useEffect(() => {
@@ -119,12 +174,17 @@ export const PostManagementPage = () => {
   const loadData = async () => {
     setIsLoading(true)
     try {
-      const [blogsData, projectsData] = await Promise.all([
+      const [blogsData, projectsData, researchData, settingsData] = await Promise.all([
         apiService.getBlogs().catch(() => []),
         apiService.getProjects().catch(() => []),
+        apiService.getResearch(true).catch(() => []),
+        apiService.getSettings().catch(() => ({ categories: [], tags: [] })),
       ])
       setBlogs(blogsData)
       setProjects(projectsData)
+      setResearchList(researchData)
+      setSystemCategories(settingsData.categories || [])
+      setSystemTags(settingsData.tags || [])
     } catch (err) {
       console.error('Failed to load data:', err)
       setError('Failed to load your posts and files')
@@ -132,6 +192,74 @@ export const PostManagementPage = () => {
       setIsLoading(false)
     }
   }
+
+  // Helper to persist dynamically added categories
+  const ensureCategory = async (name: string, entity_type: string) => {
+    const trimmed = name?.trim();
+    if (!trimmed) return;
+    const exists = systemCategories.some(c => c.name.toLowerCase() === trimmed.toLowerCase());
+    if (!exists) {
+      try {
+        const created = await apiService.createCategory({ name: trimmed, entity_type });
+        if (created) setSystemCategories(prev => [...prev, created]);
+      } catch (err) {
+        console.warn('Could not auto-save category:', err);
+      }
+    }
+  };
+
+  // Helper to persist dynamically added tags
+  const ensureTags = async (tagsArr: string[], entity_type: string) => {
+    for (const tag of tagsArr) {
+      const trimmed = tag?.trim();
+      if (!trimmed) continue;
+      const exists = systemTags.some(t => t.name.toLowerCase() === trimmed.toLowerCase());
+      if (!exists) {
+        try {
+          const created = await apiService.createTag({ name: trimmed, entity_type });
+          if (created) setSystemTags(prev => [...prev, created]);
+        } catch (err) {
+          console.warn('Could not auto-save tag:', err);
+        }
+      }
+    }
+  };
+
+  // Helpers for timeline duration parsing & calculation
+  const parseDurationVal = (d?: string) => {
+    if (!d) return '';
+    const match = d.match(/^(\d+)/);
+    return match ? match[1] : '';
+  };
+
+  const parseDurationUnit = (d?: string) => {
+    if (!d) return 'Days';
+    if (d.toLowerCase().includes('year')) return 'Years';
+    if (d.toLowerCase().includes('month')) return 'Months';
+    if (d.toLowerCase().includes('week')) return 'Weeks';
+    return 'Days';
+  };
+
+  const calculateDurationBetween = (start?: string, end?: string): string => {
+    if (!start || !end) return '';
+    const s = new Date(start).getTime();
+    const e = new Date(end).getTime();
+    if (isNaN(s) || isNaN(e) || e < s) return '';
+    const diffDays = Math.max(1, Math.round((e - s) / (1000 * 60 * 60 * 24)));
+    if (diffDays >= 365) {
+      const yrs = Math.round(diffDays / 365);
+      return `${yrs} Year${yrs > 1 ? 's' : ''}`;
+    }
+    if (diffDays >= 60) {
+      const mos = Math.round(diffDays / 30);
+      return `${mos} Month${mos > 1 ? 's' : ''}`;
+    }
+    if (diffDays >= 14) {
+      const wks = Math.round(diffDays / 7);
+      return `${wks} Week${wks > 1 ? 's' : ''}`;
+    }
+    return `${diffDays} Day${diffDays > 1 ? 's' : ''}`;
+  };
 
   // Blog handlers
   const handleOpenBlogDialog = (blog?: BlogPost) => {
@@ -142,7 +270,7 @@ export const PostManagementPage = () => {
         content: blog.content,
         author: blog.author || '',
         category: blog.category,
-        tags: blog.tags.join(', '),
+        tags: Array.isArray(blog.tags) ? blog.tags : [],
         featured: blog.featured,
         is_hidden: blog.is_hidden || false,
       })
@@ -154,7 +282,7 @@ export const PostManagementPage = () => {
         content: '',
         author: '',
         category: '',
-        tags: '',
+        tags: [],
         featured: false,
         is_hidden: false,
       })
@@ -175,9 +303,16 @@ export const PostManagementPage = () => {
       return
     }
 
-    if (!blogForm.content && !blogPdfFile) {
-      setError('Either content or a PDF file must be provided')
-      return
+    if (FEATURES.ENABLE_PDF_UPLOAD) {
+      if (!blogForm.content && !blogPdfFile) {
+        setError('Either content or a PDF file must be provided')
+        return
+      }
+    } else {
+      if (!blogForm.content) {
+        setError('Content is required')
+        return
+      }
     }
 
     try {
@@ -186,10 +321,14 @@ export const PostManagementPage = () => {
 
       let finalPdfUrl = editingBlogId ? blogs.find(b => b.id === editingBlogId)?.pdf_path : undefined;
 
-      if (blogPdfFile) {
+      if (FEATURES.ENABLE_PDF_UPLOAD && blogPdfFile) {
         const uploadedPdf = await apiService.uploadPdf(blogPdfFile);
         finalPdfUrl = uploadedPdf.file_path;
       }
+
+      // Ensure newly added category or tags are persisted
+      if (blogForm.category) await ensureCategory(blogForm.category, 'blog');
+      if (blogForm.tags && blogForm.tags.length > 0) await ensureTags(blogForm.tags, 'blog');
 
       const payload = {
         title: blogForm.title,
@@ -197,7 +336,7 @@ export const PostManagementPage = () => {
         content: blogForm.content,
         author: blogForm.author,
         category: blogForm.category,
-        tags: blogForm.tags.split(',').map((tag) => tag.trim()),
+        tags: blogForm.tags,
         featured: blogForm.featured,
         is_hidden: blogForm.is_hidden,
         pdf_url: finalPdfUrl,
@@ -218,20 +357,21 @@ export const PostManagementPage = () => {
     }
   }
 
-
   // Project handlers
   const handleOpenProjectDialog = (project?: Project) => {
     if (project) {
       setProjectForm({
         title: project.title,
         description: project.description,
-        technologies: project.technologies ? project.technologies.join(', ') : '',
+        technologies: Array.isArray(project.technologies) ? project.technologies : [],
         github: project.github || '',
         demo: project.demo || '',
         image: project.image || '',
         category: project.category || '',
         featured: project.featured,
         status: project.status || 'Completed',
+        startDate: project.startDate || project.start_date || '',
+        endDate: project.endDate || project.end_date || '',
         timeline: project.timeline || [],
         is_hidden: project.is_hidden || false,
       })
@@ -240,13 +380,15 @@ export const PostManagementPage = () => {
       setProjectForm({
         title: '',
         description: '',
-        technologies: '',
+        technologies: [],
         github: '',
         demo: '',
         image: '',
         category: '',
         featured: false,
         status: 'Completed',
+        startDate: '',
+        endDate: '',
         timeline: [],
         is_hidden: false,
       })
@@ -270,10 +412,18 @@ export const PostManagementPage = () => {
       setMessage(null)
       setError(null)
 
+      // Ensure newly added category or technologies are persisted
+      if (projectForm.category) await ensureCategory(projectForm.category, 'project');
+      if (projectForm.technologies && projectForm.technologies.length > 0) {
+        await ensureTags(projectForm.technologies, 'project');
+      }
+
       const payload = {
         ...projectForm,
-        status: projectForm.status as 'Completed' | 'In Progress' | 'Planning' | 'Initiated',
-        technologies: projectForm.technologies ? projectForm.technologies.split(',').map((tag) => tag.trim()) : [],
+        status: projectForm.status as Project['status'],
+        technologies: projectForm.technologies,
+        startDate: projectForm.startDate || undefined,
+        endDate: projectForm.endDate || undefined,
       }
 
       if (editingProjectId) {
@@ -291,9 +441,99 @@ export const PostManagementPage = () => {
     }
   }
 
+  // Research handlers
+  const handleOpenResearchDialog = (item?: ResearchItem) => {
+    if (item) {
+      setResearchForm({
+        title: item.title,
+        abstract: item.abstract,
+        content: item.content || '',
+        author: item.author,
+        status: item.status || 'Ongoing',
+        category: item.category || 'Computer Science',
+        tags: Array.isArray(item.tags) ? item.tags : [],
+        featured: item.featured,
+        is_hidden: item.is_hidden || false,
+      })
+      setEditingResearchId(item.id)
+    } else {
+      setResearchForm({
+        title: '',
+        abstract: '',
+        content: '',
+        author: '',
+        status: 'Ongoing',
+        category: 'Computer Science',
+        tags: [],
+        featured: false,
+        is_hidden: false,
+      })
+      setEditingResearchId(null)
+    }
+    setResearchPdfFile(null)
+    setResearchDialogOpen(true)
+  }
+
+  const handleCloseResearchDialog = () => {
+    setResearchDialogOpen(false)
+    setEditingResearchId(null)
+  }
+
+  const handleSaveResearch = async () => {
+    if (!researchForm.title || !researchForm.abstract || !researchForm.author) {
+      setError('Title, abstract, and author are required')
+      return
+    }
+
+    try {
+      setMessage(null)
+      setError(null)
+
+      let finalPdfUrl = editingResearchId
+        ? researchList.find((r) => r.id === editingResearchId)?.pdf_url
+        : undefined
+
+      if (researchPdfFile) {
+        const uploadedPdf = await apiService.uploadPdf(researchPdfFile)
+        finalPdfUrl = uploadedPdf.file_path
+      }
+
+      // Ensure newly added category or tags are persisted
+      if (researchForm.category) await ensureCategory(researchForm.category, 'research');
+      if (researchForm.tags && researchForm.tags.length > 0) {
+        await ensureTags(researchForm.tags, 'research');
+      }
+
+      const payload = {
+        title: researchForm.title,
+        abstract: researchForm.abstract,
+        content: researchForm.content,
+        author: researchForm.author,
+        status: researchForm.status,
+        category: researchForm.category,
+        tags: researchForm.tags,
+        featured: researchForm.featured,
+        is_hidden: researchForm.is_hidden,
+        pdf_url: finalPdfUrl,
+      }
+
+      if (editingResearchId) {
+        await apiService.updateResearch(editingResearchId, payload)
+        setMessage('Research publication updated successfully')
+      } else {
+        await apiService.createResearch(payload)
+        setMessage('Research publication created successfully')
+      }
+
+      handleCloseResearchDialog()
+      await loadData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save research publication')
+    }
+  }
 
   // Delete handlers
-  const handleOpenDeleteDialog = (type: 'blog' | 'pdf' | 'project', id: number) => {
+  const handleOpenDeleteDialog = (type: 'blog' | 'pdf' | 'project' | 'research', id: number) => {
     setDeleteType(type)
     setDeleteId(id)
     setDeleteDialogOpen(true)
@@ -312,7 +552,14 @@ export const PostManagementPage = () => {
       } else if (deleteType === 'project') {
         await apiService.deleteProject(deleteId)
         setMessage('Project deleted successfully')
+      } else if (deleteType === 'research') {
+        await apiService.deleteResearch(deleteId)
+        setMessage('Research publication deleted successfully')
       } else {
+        if (!FEATURES.ENABLE_PDF_UPLOAD) {
+          setError('PDF operations are disabled')
+          return
+        }
         await apiService.deletePdf(deleteId)
         setMessage('PDF deleted successfully')
       }
@@ -367,7 +614,9 @@ export const PostManagementPage = () => {
               Post Management
             </Typography>
             <Typography color="text.secondary">
-              Upload and manage your blog posts and PDF files
+              {FEATURES.ENABLE_PDF_UPLOAD 
+                ? 'Upload and manage your blog posts and PDF files' 
+                : 'Manage your blog posts and projects'}
             </Typography>
           </Box>
         </Box>
@@ -392,6 +641,13 @@ export const PostManagementPage = () => {
               startIcon={<Work />}
             >
               Projects ({projects.length})
+            </Button>
+            <Button
+              variant={activeTab === 'research' ? 'contained' : 'outlined'}
+              onClick={() => setActiveTab('research')}
+              startIcon={<Science />}
+            >
+              Research ({researchList.length})
             </Button>
           </Stack>
           <Button variant="outlined" onClick={() => setSettingsOpen(true)}>
@@ -448,7 +704,7 @@ export const PostManagementPage = () => {
                     </CardContent>
                     <Divider />
                     <Box sx={{ p: 1, display: 'flex', gap: 1 }}>
-                      {!blog.pdf_path && (
+                      {(!blog.pdf_path || !FEATURES.ENABLE_PDF_UPLOAD) && (
                         <IconButton
                           size="small"
                           onClick={() => handleOpenBlogDialog(blog)}
@@ -539,20 +795,97 @@ export const PostManagementPage = () => {
         </Box>
       )}
 
+      {/* Research Tab */}
+      {activeTab === 'research' && (
+        <Box>
+          <Card elevation={2} sx={{ mb: 3 }}>
+            <CardContent>
+              <Button
+                variant="contained"
+                color="secondary"
+                startIcon={<Science />}
+                onClick={() => handleOpenResearchDialog()}
+                fullWidth
+              >
+                Create New Research Publication
+              </Button>
+            </CardContent>
+          </Card>
+
+          {researchList.length === 0 ? (
+            <Card elevation={2}>
+              <CardContent sx={{ textAlign: 'center', py: 4 }}>
+                <Typography color="text.secondary">No research publications yet. Click above to add your first research manuscript!</Typography>
+              </CardContent>
+            </Card>
+          ) : (
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2 }}>
+              {researchList.map((item) => (
+                <Box key={item.id}>
+                  <Card elevation={2} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <CardContent sx={{ flexGrow: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                        {item.title}
+                      </Typography>
+                      <Typography color="text.secondary" sx={{ mb: 2, fontSize: '0.875rem' }}>
+                        {item.abstract}
+                      </Typography>
+                      <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        <Chip label={item.status} size="small" color="primary" />
+                        <Chip label={item.category} size="small" variant="outlined" />
+                        {item.pdf_url && (
+                          <Chip label="PDF Attached" size="small" color="secondary" variant="outlined" />
+                        )}
+                        {item.featured && (
+                          <Chip label="Featured" size="small" color="success" />
+                        )}
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        {item.tags?.map((tag, index) => (
+                          <Chip key={index} label={`#${tag}`} size="small" variant="outlined" />
+                        ))}
+                      </Box>
+                    </CardContent>
+                    <Box sx={{ p: 2, pt: 0, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleOpenResearchDialog(item)}
+                        color="primary"
+                      >
+                        <Edit fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleOpenDeleteDialog('research', item.id)}
+                        color="error"
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  </Card>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
+      )}
+
       {/* Blog Dialog */}
       <Dialog open={blogDialogOpen} onClose={handleCloseBlogDialog} maxWidth="md" fullWidth>
         <DialogTitle>{editingBlogId ? 'Edit Blog Post' : 'Create New Blog Post'}</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
-          <Stack spacing={2}>
+          <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
               label="Title"
               fullWidth
+              size="small"
               value={blogForm.title}
               onChange={(e) => setBlogForm({ ...blogForm, title: e.target.value })}
             />
             <TextField
               label="Excerpt"
               fullWidth
+              size="small"
               multiline
               rows={2}
               value={blogForm.excerpt}
@@ -561,6 +894,7 @@ export const PostManagementPage = () => {
             <TextField
               label="Content"
               fullWidth
+              size="small"
               multiline
               rows={4}
               value={blogForm.content}
@@ -568,43 +902,90 @@ export const PostManagementPage = () => {
               helperText="You can use Markdown for styling (e.g., **bold**, # Heading, [link](url))"
             />
 
-            <TextField
-              label="Author"
-              fullWidth
-              value={blogForm.author}
-              onChange={(e) => setBlogForm({ ...blogForm, author: e.target.value })}
-            />
-
-            <Box>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Or upload a PDF for this blog post
-              </Typography>
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={(e) => setBlogPdfFile(e.target.files?.[0] || null)}
-                style={{ display: 'none' }}
-                id="blog-pdf-input"
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                label="Author"
+                fullWidth
+                size="small"
+                value={blogForm.author}
+                onChange={(e) => setBlogForm({ ...blogForm, author: e.target.value })}
               />
-              <label htmlFor="blog-pdf-input">
-                <Button variant="outlined" component="span" fullWidth>
-                  {blogPdfFile ? blogPdfFile.name : 'Select PDF (Optional)'}
-                </Button>
-              </label>
-            </Box>
 
-            <TextField
-              label="Category"
-              fullWidth
-              value={blogForm.category}
-              onChange={(e) => setBlogForm({ ...blogForm, category: e.target.value })}
-            />
-            <TextField
-              label="Tags (comma separated)"
-              fullWidth
+              <Autocomplete
+                freeSolo
+                size="small"
+                fullWidth
+                options={systemCategories.filter(c => c.entity_type === 'blog').map(c => c.name)}
+                value={blogForm.category}
+                onChange={(_, newValue) => {
+                  const clean = typeof newValue === 'string' ? newValue.replace(/^\+ Add "(.*)"$/, '$1') : '';
+                  setBlogForm({ ...blogForm, category: clean || '' });
+                }}
+                filterOptions={(options, params) => {
+                  const filtered = filter(options, params);
+                  const { inputValue } = params;
+                  const isExisting = options.some((opt) => opt.toLowerCase() === inputValue.trim().toLowerCase());
+                  if (inputValue.trim() !== '' && !isExisting) {
+                    filtered.push(`+ Add "${inputValue.trim()}"`);
+                  }
+                  return filtered;
+                }}
+                renderInput={(params) => (
+                  <TextField {...params} label="Category" placeholder="Select or type to create" size="small" />
+                )}
+              />
+            </Stack>
+
+            <Autocomplete
+              multiple
+              freeSolo
+              size="small"
+              options={systemTags.filter(t => t.entity_type === 'blog').map(t => t.name)}
               value={blogForm.tags}
-              onChange={(e) => setBlogForm({ ...blogForm, tags: e.target.value })}
+              onChange={(_, newValue) => {
+                const cleaned = newValue.map(v => typeof v === 'string' ? v.replace(/^\+ Add "(.*)"$/, '$1') : v);
+                setBlogForm({ ...blogForm, tags: cleaned });
+              }}
+              filterOptions={(options, params) => {
+                const filtered = filter(options, params);
+                const { inputValue } = params;
+                const isExisting = options.some((opt) => opt.toLowerCase() === inputValue.trim().toLowerCase());
+                if (inputValue.trim() !== '' && !isExisting) {
+                  filtered.push(`+ Add "${inputValue.trim()}"`);
+                }
+                return filtered;
+              }}
+              renderTags={(value: readonly string[], getTagProps) =>
+                value.map((option: string, index: number) => {
+                  const { key, ...tagProps } = getTagProps({ index });
+                  return <Chip key={key} variant="outlined" label={option} size="small" {...tagProps} />;
+                })
+              }
+              renderInput={(params) => (
+                <TextField {...params} label="Tags" placeholder="Search or type new tag..." size="small" />
+              )}
             />
+
+            {FEATURES.ENABLE_PDF_UPLOAD && (
+              <Box>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Or upload a PDF for this blog post
+                </Typography>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => setBlogPdfFile(e.target.files?.[0] || null)}
+                  style={{ display: 'none' }}
+                  id="blog-pdf-input"
+                />
+                <label htmlFor="blog-pdf-input">
+                  <Button variant="outlined" component="span" size="small" fullWidth>
+                    {blogPdfFile ? blogPdfFile.name : 'Select PDF (Optional)'}
+                  </Button>
+                </label>
+              </Box>
+            )}
+
             <FormControlLabel
               control={
                 <Switch
@@ -630,64 +1011,157 @@ export const PostManagementPage = () => {
       <Dialog open={projectDialogOpen} onClose={handleCloseProjectDialog} maxWidth="md" fullWidth>
         <DialogTitle>{editingProjectId ? 'Edit Project' : 'Create New Project'}</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
-          <Stack spacing={2}>
+          <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
               label="Title"
               fullWidth
+              size="small"
               value={projectForm.title}
               onChange={(e) => setProjectForm({ ...projectForm, title: e.target.value })}
             />
             <TextField
               label="Description"
               fullWidth
+              size="small"
               multiline
               rows={3}
               value={projectForm.description}
               onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
             />
-            <TextField
-              label="Technologies (comma separated)"
-              fullWidth
+
+            {/* Overall Project Start & End Dates */}
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                label="Project Start Date"
+                type="date"
+                size="small"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                sx={dateInputSx}
+                onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
+                value={projectForm.startDate}
+                onChange={(e) => setProjectForm({ ...projectForm, startDate: e.target.value })}
+              />
+              <TextField
+                label="Project End Date"
+                type="date"
+                size="small"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                sx={dateInputSx}
+                onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
+                value={projectForm.endDate}
+                onChange={(e) => setProjectForm({ ...projectForm, endDate: e.target.value })}
+              />
+            </Stack>
+
+            {/* Category and Creatable Status */}
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <Autocomplete
+                freeSolo
+                size="small"
+                fullWidth
+                options={systemCategories.filter(c => c.entity_type === 'project').map(c => c.name)}
+                value={projectForm.category}
+                onChange={(_, newValue) => {
+                  const clean = typeof newValue === 'string' ? newValue.replace(/^\+ Add "(.*)"$/, '$1') : '';
+                  setProjectForm({ ...projectForm, category: clean || '' });
+                }}
+                filterOptions={(options, params) => {
+                  const filtered = filter(options, params);
+                  const { inputValue } = params;
+                  const isExisting = options.some((opt) => opt.toLowerCase() === inputValue.trim().toLowerCase());
+                  if (inputValue.trim() !== '' && !isExisting) {
+                    filtered.push(`+ Add "${inputValue.trim()}"`);
+                  }
+                  return filtered;
+                }}
+                renderInput={(params) => (
+                  <TextField {...params} label="Category" placeholder="Select or type new category" size="small" />
+                )}
+              />
+
+              <Autocomplete
+                freeSolo
+                size="small"
+                fullWidth
+                options={PROJECT_STATUS_OPTIONS}
+                value={projectForm.status}
+                onChange={(_, newValue) => {
+                  const clean = typeof newValue === 'string' ? newValue.replace(/^\+ Add "(.*)"$/, '$1') : '';
+                  setProjectForm({ ...projectForm, status: clean || '' });
+                }}
+                filterOptions={(options, params) => {
+                  const filtered = filter(options, params);
+                  const { inputValue } = params;
+                  const isExisting = options.some((opt) => opt.toLowerCase() === inputValue.trim().toLowerCase());
+                  if (inputValue.trim() !== '' && !isExisting) {
+                    filtered.push(`+ Add "${inputValue.trim()}"`);
+                  }
+                  return filtered;
+                }}
+                renderInput={(params) => (
+                  <TextField {...params} label="Status" placeholder="Select or type custom status" size="small" />
+                )}
+              />
+            </Stack>
+
+            {/* Technologies with Creatable Autocomplete */}
+            <Autocomplete
+              multiple
+              freeSolo
+              size="small"
+              options={systemTags.filter(t => t.entity_type === 'project').map(t => t.name)}
               value={projectForm.technologies}
-              onChange={(e) => setProjectForm({ ...projectForm, technologies: e.target.value })}
+              onChange={(_, newValue) => {
+                const cleaned = newValue.map(v => typeof v === 'string' ? v.replace(/^\+ Add "(.*)"$/, '$1') : v);
+                setProjectForm({ ...projectForm, technologies: cleaned });
+              }}
+              filterOptions={(options, params) => {
+                const filtered = filter(options, params);
+                const { inputValue } = params;
+                const isExisting = options.some((opt) => opt.toLowerCase() === inputValue.trim().toLowerCase());
+                if (inputValue.trim() !== '' && !isExisting) {
+                  filtered.push(`+ Add "${inputValue.trim()}"`);
+                }
+                return filtered;
+              }}
+              renderTags={(value: readonly string[], getTagProps) =>
+                value.map((option: string, index: number) => {
+                  const { key, ...tagProps } = getTagProps({ index });
+                  return <Chip key={key} variant="outlined" label={option} size="small" {...tagProps} />;
+                })
+              }
+              renderInput={(params) => (
+                <TextField {...params} label="Technologies & Frameworks" placeholder="Search or add technology..." size="small" />
+              )}
             />
-            <TextField
-              label="GitHub Link"
-              fullWidth
-              value={projectForm.github}
-              onChange={(e) => setProjectForm({ ...projectForm, github: e.target.value })}
-            />
-            <TextField
-              label="Demo Link"
-              fullWidth
-              value={projectForm.demo}
-              onChange={(e) => setProjectForm({ ...projectForm, demo: e.target.value })}
-            />
+
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                label="GitHub Link"
+                fullWidth
+                size="small"
+                value={projectForm.github}
+                onChange={(e) => setProjectForm({ ...projectForm, github: e.target.value })}
+              />
+              <TextField
+                label="Demo Link"
+                fullWidth
+                size="small"
+                value={projectForm.demo}
+                onChange={(e) => setProjectForm({ ...projectForm, demo: e.target.value })}
+              />
+            </Stack>
+
             <TextField
               label="Image URL"
               fullWidth
+              size="small"
               value={projectForm.image}
               onChange={(e) => setProjectForm({ ...projectForm, image: e.target.value })}
             />
-            <TextField
-              label="Category"
-              fullWidth
-              value={projectForm.category}
-              onChange={(e) => setProjectForm({ ...projectForm, category: e.target.value })}
-            />
-            <FormControl fullWidth>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={projectForm.status}
-                label="Status"
-                onChange={(e) => setProjectForm({ ...projectForm, status: e.target.value as 'Completed' | 'In Progress' | 'Planning' | 'Initiated' })}
-              >
-                <MenuItem value="Initiated">Initiated</MenuItem>
-                <MenuItem value="Planning">Planning</MenuItem>
-                <MenuItem value="In Progress">In Progress</MenuItem>
-                <MenuItem value="Completed">Completed</MenuItem>
-              </Select>
-            </FormControl>
+
             <FormControlLabel
               control={
                 <Switch
@@ -699,53 +1173,88 @@ export const PostManagementPage = () => {
               label="Hide Project"
             />
             
-            <Box>
-              <Typography variant="subtitle1" gutterBottom>Timeline Events</Typography>
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>Timeline Milestones & Slots</Typography>
               {projectForm.timeline.map((event, index) => (
                 <Card variant="outlined" sx={{ p: 2, mb: 2 }} key={index}>
                   <Stack spacing={2}>
-                    <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                       <TextField
-                        label="Start Time"
+                        label="Start Date"
                         size="small"
                         type="date"
                         InputLabelProps={{ shrink: true }}
+                        sx={dateInputSx}
+                        onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                         value={event.startTime}
                         onChange={(e) => {
                           const newTimeline = [...projectForm.timeline];
-                          newTimeline[index].startTime = e.target.value;
+                          const newStartTime = e.target.value;
+                          newTimeline[index].startTime = newStartTime;
+                          const autoDur = calculateDurationBetween(newStartTime, newTimeline[index].endTime);
+                          if (autoDur) newTimeline[index].duration = autoDur;
                           setProjectForm({ ...projectForm, timeline: newTimeline });
                         }}
                         fullWidth
                       />
                       <TextField
-                        label="End Time"
+                        label="End Date"
                         size="small"
                         type="date"
                         InputLabelProps={{ shrink: true }}
+                        sx={dateInputSx}
+                        onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                         value={event.endTime}
                         onChange={(e) => {
                           const newTimeline = [...projectForm.timeline];
-                          newTimeline[index].endTime = e.target.value;
+                          const newEndTime = e.target.value;
+                          newTimeline[index].endTime = newEndTime;
+                          const autoDur = calculateDurationBetween(newTimeline[index].startTime, newEndTime);
+                          if (autoDur) newTimeline[index].duration = autoDur;
                           setProjectForm({ ...projectForm, timeline: newTimeline });
                         }}
                         fullWidth
                       />
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    </Stack>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+                      <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: '45%' } }}>
+                        <TextField
+                          label="Duration"
+                          size="small"
+                          type="number"
+                          inputProps={{ min: 1 }}
+                          value={parseDurationVal(event.duration)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const unit = parseDurationUnit(event.duration);
+                            const newTimeline = [...projectForm.timeline];
+                            newTimeline[index].duration = val ? `${val} ${val === '1' ? unit.replace(/s$/, '') : unit}` : '';
+                            setProjectForm({ ...projectForm, timeline: newTimeline });
+                          }}
+                          sx={{ flex: 1 }}
+                        />
+                        <FormControl size="small" sx={{ width: 110 }}>
+                          <InputLabel>Unit</InputLabel>
+                          <Select
+                            value={parseDurationUnit(event.duration)}
+                            label="Unit"
+                            onChange={(e) => {
+                              const val = parseDurationVal(event.duration) || '1';
+                              const unit = e.target.value;
+                              const newTimeline = [...projectForm.timeline];
+                              newTimeline[index].duration = `${val} ${val === '1' ? unit.replace(/s$/, '') : unit}`;
+                              setProjectForm({ ...projectForm, timeline: newTimeline });
+                            }}
+                          >
+                            <MenuItem value="Days">Days</MenuItem>
+                            <MenuItem value="Weeks">Weeks</MenuItem>
+                            <MenuItem value="Months">Months</MenuItem>
+                            <MenuItem value="Years">Years</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Box>
                       <TextField
-                        label="Duration (e.g. '2 weeks')"
-                        size="small"
-                        value={event.duration}
-                        onChange={(e) => {
-                          const newTimeline = [...projectForm.timeline];
-                          newTimeline[index].duration = e.target.value;
-                          setProjectForm({ ...projectForm, timeline: newTimeline });
-                        }}
-                        sx={{ width: '40%' }}
-                      />
-                      <TextField
-                        label="Description"
+                        label="Milestone Description"
                         size="small"
                         value={event.description}
                         onChange={(e) => {
@@ -761,17 +1270,17 @@ export const PostManagementPage = () => {
                       }}>
                         <RemoveCircleOutline />
                       </IconButton>
-                    </Box>
+                    </Stack>
                   </Stack>
                 </Card>
               ))}
-              <Button startIcon={<Add />} variant="outlined" onClick={() => {
+              <Button startIcon={<Add />} variant="outlined" size="small" onClick={() => {
                 setProjectForm({
                   ...projectForm,
                   timeline: [...projectForm.timeline, { startTime: '', endTime: '', duration: '', description: '' }]
                 })
               }}>
-                Add Timeline Event
+                Add Milestone / Timeline Slot
               </Button>
             </Box>
 
@@ -785,12 +1294,184 @@ export const PostManagementPage = () => {
         </DialogActions>
       </Dialog>
 
+      {/* Research Dialog */}
+      <Dialog open={researchDialogOpen} onClose={handleCloseResearchDialog} maxWidth="md" fullWidth>
+        <DialogTitle>{editingResearchId ? 'Edit Research Publication' : 'Create New Research Publication'}</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label="Research Title"
+              fullWidth
+              size="small"
+              value={researchForm.title}
+              onChange={(e) => setResearchForm({ ...researchForm, title: e.target.value })}
+              required
+            />
+            <TextField
+              label="Abstract / Executive Summary"
+              fullWidth
+              size="small"
+              multiline
+              rows={3}
+              value={researchForm.abstract}
+              onChange={(e) => setResearchForm({ ...researchForm, abstract: e.target.value })}
+              required
+            />
+            <TextField
+              label="Full Methodology / Paper Content"
+              fullWidth
+              size="small"
+              multiline
+              rows={5}
+              value={researchForm.content}
+              onChange={(e) => setResearchForm({ ...researchForm, content: e.target.value })}
+              helperText="Markdown supported (headings, equations, citations, links)"
+            />
+
+            <TextField
+              label="Author(s)"
+              fullWidth
+              size="small"
+              value={researchForm.author}
+              onChange={(e) => setResearchForm({ ...researchForm, author: e.target.value })}
+              required
+            />
+
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <Autocomplete
+                freeSolo
+                size="small"
+                fullWidth
+                options={RESEARCH_STATUS_OPTIONS}
+                value={researchForm.status}
+                onChange={(_, newValue) => {
+                  const clean = typeof newValue === 'string' ? newValue.replace(/^\+ Add "(.*)"$/, '$1') : '';
+                  setResearchForm({ ...researchForm, status: clean || '' });
+                }}
+                filterOptions={(options, params) => {
+                  const filtered = filter(options, params);
+                  const { inputValue } = params;
+                  const isExisting = options.some((opt) => opt.toLowerCase() === inputValue.trim().toLowerCase());
+                  if (inputValue.trim() !== '' && !isExisting) {
+                    filtered.push(`+ Add "${inputValue.trim()}"`);
+                  }
+                  return filtered;
+                }}
+                renderInput={(params) => (
+                  <TextField {...params} label="Research Status" placeholder="Select or type status" size="small" />
+                )}
+              />
+
+              <Autocomplete
+                freeSolo
+                size="small"
+                fullWidth
+                options={systemCategories.filter(c => c.entity_type === 'research').map(c => c.name)}
+                value={researchForm.category}
+                onChange={(_, newValue) => {
+                  const clean = typeof newValue === 'string' ? newValue.replace(/^\+ Add "(.*)"$/, '$1') : '';
+                  setResearchForm({ ...researchForm, category: clean || '' });
+                }}
+                filterOptions={(options, params) => {
+                  const filtered = filter(options, params);
+                  const { inputValue } = params;
+                  const isExisting = options.some((opt) => opt.toLowerCase() === inputValue.trim().toLowerCase());
+                  if (inputValue.trim() !== '' && !isExisting) {
+                    filtered.push(`+ Add "${inputValue.trim()}"`);
+                  }
+                  return filtered;
+                }}
+                renderInput={(params) => (
+                  <TextField {...params} label="Domain / Category" placeholder="Select or type category" size="small" />
+                )}
+              />
+            </Stack>
+
+            <Autocomplete
+              multiple
+              freeSolo
+              size="small"
+              options={systemTags.filter(t => t.entity_type === 'research').map(t => t.name)}
+              value={researchForm.tags}
+              onChange={(_, newValue) => {
+                const cleaned = newValue.map(v => typeof v === 'string' ? v.replace(/^\+ Add "(.*)"$/, '$1') : v);
+                setResearchForm({ ...researchForm, tags: cleaned });
+              }}
+              filterOptions={(options, params) => {
+                const filtered = filter(options, params);
+                const { inputValue } = params;
+                const isExisting = options.some((opt) => opt.toLowerCase() === inputValue.trim().toLowerCase());
+                if (inputValue.trim() !== '' && !isExisting) {
+                  filtered.push(`+ Add "${inputValue.trim()}"`);
+                }
+                return filtered;
+              }}
+              renderTags={(value: readonly string[], getTagProps) =>
+                value.map((option: string, index: number) => {
+                  const { key, ...tagProps } = getTagProps({ index });
+                  return <Chip key={key} variant="outlined" label={option} size="small" {...tagProps} />;
+                })
+              }
+              renderInput={(params) => (
+                <TextField {...params} label="Tags" placeholder="Search or type new tag..." size="small" />
+              )}
+            />
+
+            {/* Direct Research Manuscript / PDF Upload */}
+            <Box sx={{ p: 2, border: '1px dashed', borderColor: 'primary.main', borderRadius: 2 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                Attach Research Paper / PDF Documentation (Vercel Blob)
+              </Typography>
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => setResearchPdfFile(e.target.files?.[0] || null)}
+                style={{ display: 'none' }}
+                id="research-pdf-input"
+              />
+              <label htmlFor="research-pdf-input">
+                <Button variant="outlined" component="span" size="small" startIcon={<CloudUpload />} fullWidth>
+                  {researchPdfFile ? researchPdfFile.name : 'Choose PDF Manuscript File'}
+                </Button>
+              </label>
+            </Box>
+
+            <Stack direction="row" spacing={3}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={researchForm.featured}
+                    onChange={(e) => setResearchForm({ ...researchForm, featured: e.target.checked })}
+                  />
+                }
+                label="Featured Publication"
+              />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={researchForm.is_hidden}
+                    onChange={(e) => setResearchForm({ ...researchForm, is_hidden: e.target.checked })}
+                  />
+                }
+                label="Hide Publication"
+              />
+            </Stack>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseResearchDialog}>Cancel</Button>
+          <Button onClick={handleSaveResearch} variant="contained" color="secondary">
+            {editingResearchId ? 'Update Publication' : 'Publish Research'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete this {deleteType === 'blog' ? 'blog post' : deleteType === 'project' ? 'project' : 'PDF file'}? This
+            Are you sure you want to delete this {deleteType === 'blog' ? 'blog post' : deleteType === 'project' ? 'project' : deleteType === 'research' ? 'research publication' : 'PDF file'}? This
             action cannot be undone.
           </Typography>
         </DialogContent>

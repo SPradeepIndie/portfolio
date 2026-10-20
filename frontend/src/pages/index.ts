@@ -13,3 +13,4 @@ export { LoginPage } from './Auth/Login';
 export { RegisterPage } from './Auth/Register';
 export { UserPage } from './User/User';
 export { PostManagementPage } from './PostManagement/PostManagement';
+export { ResearchPage, ResearchDetail } from './Research';

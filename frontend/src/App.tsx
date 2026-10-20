@@ -4,18 +4,33 @@
  * All rights reserved.
  */
 
+import { useState, useEffect } from 'react'
 import { ThemeProvider as MuiThemeProvider, CssBaseline } from '@mui/material'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { useThemeMode } from './hooks/useTheme'
 import { lightTheme, darkTheme } from './theme'
 import { Layout } from './components/Layout'
 import { RequireAuth } from './components/RequireAuth'
-import { HomePage, ProjectsPage, BlogsPage, BlogDetail, MorePage, LoginPage, RegisterPage, UserPage, PostManagementPage } from './pages'
+import { LoadingScreen } from './components/LoadingScreen'
+import { HomePage, ProjectsPage, BlogsPage, BlogDetail, ResearchPage, ResearchDetail, MorePage, LoginPage, RegisterPage, UserPage, PostManagementPage } from './pages'
 import './App.css'
 
 function App() {
   const { mode } = useThemeMode()
   const theme = mode === 'light' ? lightTheme : darkTheme
+  const [isInitializing, setIsInitializing] = useState(true)
+
+  useEffect(() => {
+    // Provide a smooth initial brand loading experience
+    const timer = setTimeout(() => {
+      setIsInitializing(false)
+    }, 1100)
+    return () => clearTimeout(timer)
+  }, [])
+
+  if (isInitializing) {
+    return <LoadingScreen message="Launching Katta Experience..." />
+  }
 
   return (
     <MuiThemeProvider theme={theme}>
@@ -29,6 +44,8 @@ function App() {
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/blogs" element={<BlogsPage />} />
             <Route path="/blog/:id" element={<BlogDetail />} />
+            <Route path="/research" element={<ResearchPage />} />
+            <Route path="/research/:id" element={<ResearchDetail />} />
             <Route path="/more" element={<MorePage />} />
             <Route
               path="/user"

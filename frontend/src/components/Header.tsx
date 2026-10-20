@@ -36,6 +36,7 @@ const navigationItems: NavigationItem[] = [
   { label: 'Home', path: '/' },
   { label: 'Projects', path: '/projects' },
   { label: 'Blogs', path: '/blogs' },
+  { label: 'Research', path: '/research' },
   { label: 'More', path: '/more' },
 ]
 
@@ -142,26 +143,56 @@ export const Header: React.FC = () => {
           }}
         >
           {/* Logo/Brand */}
-          <Typography
-            variant="h6"
+          <Box
             component={Link}
             to="/"
             sx={{
-              fontFamily: 'monospace',
-              fontWeight: 700,
-              color: theme.palette.primary.main,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
               textDecoration: 'none',
-              fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' },
               flexShrink: 0,
               mr: { xs: 2, sm: 4 },
-              '&:hover': {
-                color: theme.palette.secondary.main,
+              '&:hover img': {
+                transform: 'scale(1.06)',
+                boxShadow: '0 0 16px rgba(0, 242, 254, 0.6)',
               },
-              transition: 'color 0.3s ease',
+              '&:hover .brand-text': {
+                opacity: 0.9,
+              },
             }}
           >
-            My Portfolio
-          </Typography>
+            <Box
+              component="img"
+              src="/logo.jpg"
+              alt="Katta Logo"
+              sx={{
+                width: { xs: 34, sm: 40 },
+                height: { xs: 34, sm: 40 },
+                borderRadius: '8px',
+                border: '1px solid rgba(0, 242, 254, 0.3)',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.4)',
+                transition: 'all 0.3s ease',
+                objectFit: 'cover',
+              }}
+            />
+            <Typography
+              className="brand-text"
+              variant="h6"
+              sx={{
+                fontFamily: "'Outfit', sans-serif",
+                fontWeight: 800,
+                letterSpacing: '0.03em',
+                background: (th) => `linear-gradient(45deg, ${th.palette.primary.main} 20%, ${th.palette.secondary.main} 90%)`,
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontSize: { xs: '1.25rem', sm: '1.45rem', md: '1.6rem' },
+                transition: 'all 0.3s ease',
+              }}
+            >
+              Katta
+            </Typography>
+          </Box>
 
           {/* Desktop Navigation */}
           {!isMobile && (

@@ -51,16 +51,22 @@ export const projectModel = {
       featured,
       status,
       timeline,
+      start_date,
+      end_date,
+      startDate,
+      endDate,
       is_hidden = false,
     } = projectData;
 
     const timelineStr = typeof timeline === 'object' ? JSON.stringify(timeline) : (timeline || '[]');
+    const finalStartDate = start_date || startDate || null;
+    const finalEndDate = end_date || endDate || null;
 
     const result = await query(
-      `INSERT INTO projects (title, description, technologies, github, demo, image, category, featured, status, timeline, is_hidden)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `INSERT INTO projects (title, description, technologies, github, demo, image, category, featured, status, timeline, is_hidden, start_date, end_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING *`,
-      [title, description, technologies, github, demo, image, category, featured, status, timelineStr, is_hidden]
+      [title, description, technologies, github, demo, image, category, featured, status, timelineStr, is_hidden, finalStartDate, finalEndDate]
     );
     return result.rows[0];
   },
@@ -78,19 +84,25 @@ export const projectModel = {
       featured,
       status,
       timeline,
+      start_date,
+      end_date,
+      startDate,
+      endDate,
       is_hidden = false,
     } = projectData;
 
     const timelineStr = typeof timeline === 'object' ? JSON.stringify(timeline) : (timeline || '[]');
+    const finalStartDate = start_date || startDate || null;
+    const finalEndDate = end_date || endDate || null;
 
     const result = await query(
       `UPDATE projects 
        SET title = $1, description = $2, technologies = $3, github = $4, 
            demo = $5, image = $6, category = $7, featured = $8, status = $9,
-           timeline = $10, is_hidden = $11, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $12
+           timeline = $10, is_hidden = $11, start_date = $12, end_date = $13, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $14
        RETURNING *`,
-      [title, description, technologies, github, demo, image, category, featured, status, timelineStr, is_hidden, id]
+      [title, description, technologies, github, demo, image, category, featured, status, timelineStr, is_hidden, finalStartDate, finalEndDate, id]
     );
     return result.rows[0];
   },

@@ -23,6 +23,7 @@ import authController from './controllers/authController.js';
 import userController from './controllers/userController.js';
 import pdfController from './controllers/pdfController.js';
 import settingsController from './controllers/settingsController.js';
+import researchController from './controllers/researchController.js';
 import swaggerDocument from './api/swagger.js';
 
 // Import error handling middleware
@@ -77,6 +78,7 @@ app.get('/api/docs-json', (req, res) => {
 app.use('/api/portfolio', portfolioController);
 app.use('/api/projects', projectController);
 app.use('/api/blogs', blogController);
+app.use('/api/research', researchController);
 app.use('/api/contact', contactController);
 app.use('/api/auth', authLimiter, authController);
 app.use('/api/admin/users', userController);

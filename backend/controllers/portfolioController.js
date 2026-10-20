@@ -6,10 +6,11 @@
 
 import express from 'express';
 import * as portfolioService from '../services/portfolioService.js';
+import { cacheControl } from '../middleware/cacheControl.js';
 
 const router = express.Router();
 
-// Public route (used by frontend)
-router.get('/', portfolioService.getPortfolio);
+// Public route (used by frontend) with Edge CDN caching
+router.get('/', cacheControl(300, 600), portfolioService.getPortfolio);
 
 export default router;
